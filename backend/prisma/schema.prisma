@@ -11,3 +11,191 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model Sala {
+  id              Int @id @default(autoincrement()) @map("id")
+  anoEncerramento Int @map("ano_encerramento")
+
+  usuarios UsuarioSala[]
+
+  @@map("sala")
+}
+
+model Usuario {
+  id          Int     @id @default(autoincrement()) @map("id_usuario")
+  nome        String  @map("nome")
+  email       String  @unique @map("email")
+  senha       String  @map("senha")
+  cargoEscola String? @map("cargo_escola")
+
+  comentarios Comentario[]
+  projetos    ProjetoUsuario[]
+  tarefas     TarefaUsuario[]
+  salas       UsuarioSala[]
+
+  @@map("usuario")
+}
+
+model FuncaoProjeto {
+  id                     Int    @id @default(autoincrement()) @map("id_funcao")
+  tituloFuncaoProjeto    String @map("titulo_funcao_projeto")
+  descricaoFuncaoProjeto String @map("descricao_funcao_projeto")
+
+  projetos ProjetoUsuario[]
+
+  @@unique([tituloFuncaoProjeto, descricaoFuncaoProjeto])
+  @@map("funcao_projeto")
+}
+
+model Projeto {
+  id            Int      @id @default(autoincrement()) @map("id_projeto")
+  tituloProjeto String   @map("titulo_projeto")
+  descricao     String   @map("descricao_projeto")
+  prazo         DateTime @map("prazo") @db.Date
+  tokenGithub   String?  @map("token_github")
+
+  kanbans        Kanban[]
+  armazenamentos Armazenamento[]
+  usuarios       ProjetoUsuario[]
+  sprints        ProjetoSprint[]
+
+  @@map("projeto")
+}
+
+model Sprint {
+  id              Int      @id @default(autoincrement()) @map("id_sprint")
+  tituloSprint    String   @map("titulo_sprint")
+  descricaoSprint String?  @map("descricao_sprint")
+  prazoSprint     DateTime @map("prazo_sprint")
+
+  tarefas  Tarefa[]
+  projetos ProjetoSprint[]
+
+  @@map("sprint")
+}
+
+model Kanban {
+  id              Int     @id @default(autoincrement()) @map("id_kanban")
+  tituloKanban    String  @map("titulo_kanban")
+  descricaoKanban String? @map("descricao_kanban")
+  fkProjeto       Int     @map("FK_projeto")
+
+  projeto Projeto  @relation(fields: [fkProjeto], references: [id], onDelete: Cascade)
+  colunas Coluna[]
+
+  @@map("kanban")
+}
+
+model Coluna {
+  id              Int     @id @default(autoincrement()) @map("id_coluna")
+  tituloColuna    String  @map("titulo_coluna")
+  descricaoColuna String? @map("descricao_coluna")
+  ordem           String  @map("ordem")
+  fkKanban        Int     @map("FK_kanban")
+
+  kanban  Kanban   @relation(fields: [fkKanban], references: [id], onDelete: Cascade)
+  tarefas Tarefa[]
+
+  @@map("coluna")
+}
+
+model Tarefa {
+  id              Int      @id @default(autoincrement()) @map("id_tarefa")
+  status          String   @map("status")
+  stack           String   @map("stack")
+  tituloTarefa    String   @map("titulo_tarefa")
+  descricaoTarefa String?  @map("descricao_tarefa")
+  prazoTarefa     DateTime @map("prazo_tarefa")
+  fkColuna        Int      @map("FK_coluna")
+  fkSprint        Int      @map("FK_sprint")
+
+  coluna      Coluna          @relation(fields: [fkColuna], references: [id], onDelete: Cascade)
+  sprint      Sprint          @relation(fields: [fkSprint], references: [id], onDelete: Cascade)
+  comentarios Comentario[]
+  usuarios    TarefaUsuario[]
+
+  @@map("tarefa")
+}
+
+model Comentario {
+  id        Int    @id @default(autoincrement()) @map("id_comentario")
+  conteudo  String @map("conteudo")
+  fkUsuario Int    @map("FK_usuario")
+  fkTarefa  Int    @map("FK_tarefa")
+
+  usuario Usuario @relation(fields: [fkUsuario], references: [id], onDelete: Cascade)
+  tarefa  Tarefa  @relation(fields: [fkTarefa], references: [id], onDelete: Cascade)
+
+  @@map("comentario")
+}
+
+model Armazenamento {
+  id                  Int    @id @default(autoincrement()) @map("id_armazenamento")
+  tituloArmazenamento String @map("titulo_armazenamento")
+  fkProjeto           Int    @map("FK_projeto")
+
+  projeto  Projeto   @relation(fields: [fkProjeto], references: [id], onDelete: Cascade)
+  arquivos Arquivo[]
+
+  @@map("armazenamento")
+}
+
+model Arquivo {
+  id              Int      @id @default(autoincrement()) @map("id_arquivo")
+  data            DateTime @map("data")
+  comentario      String?  @map("comentario")
+  tituloArquivo   String   @map("titulo_arquivo")
+  fkArmazenamento Int      @map("FK_armazenamento")
+
+  armazenamento Armazenamento @relation(fields: [fkArmazenamento], references: [id], onDelete: Cascade)
+
+  @@map("arquivo")
+}
+
+// --- Tabelas de Relacionamento Reduzidas/Pivot ---
+
+model ProjetoUsuario {
+  fkProjeto       Int @map("FK_projeto")
+  fkUsuario       Int @map("FK_usuario")
+  fkFuncaoProjeto Int @map("FK_funcao_projeto")
+
+  projeto       Projeto       @relation(fields: [fkProjeto], references: [id], onDelete: Cascade)
+  usuario       Usuario       @relation(fields: [fkUsuario], references: [id], onDelete: Cascade)
+  funcaoProjeto FuncaoProjeto @relation(fields: [fkFuncaoProjeto], references: [id], onDelete: Cascade)
+
+  @@id([fkProjeto, fkUsuario, fkFuncaoProjeto])
+  @@map("projeto_usuario")
+}
+
+model TarefaUsuario {
+  fkTarefa  Int @map("FK_tarefa")
+  fkUsuario Int @map("FK_usuario")
+
+  tarefa  Tarefa  @relation(fields: [fkTarefa], references: [id], onDelete: Cascade)
+  usuario Usuario @relation(fields: [fkUsuario], references: [id], onDelete: Cascade)
+
+  @@id([fkTarefa, fkUsuario])
+  @@map("tarefa_usuario")
+}
+
+model ProjetoSprint {
+  fkProjeto Int @map("FK_projeto")
+  fkSprint  Int @map("FK_sprint")
+
+  projeto Projeto @relation(fields: [fkProjeto], references: [id], onDelete: Cascade)
+  sprint  Sprint  @relation(fields: [fkSprint], references: [id], onDelete: Cascade)
+
+  @@id([fkProjeto, fkSprint])
+  @@map("projeto_sprint")
+}
+
+model UsuarioSala {
+  fkSala    Int @map("FK_sala")
+  fkUsuario Int @map("FK_usuario")
+
+  sala    Sala    @relation(fields: [fkSala], references: [id], onDelete: Cascade)
+  usuario Usuario @relation(fields: [fkUsuario], references: [id], onDelete: Cascade)
+
+  @@id([fkSala, fkUsuario])
+  @@map("usuario_sala")
+}
