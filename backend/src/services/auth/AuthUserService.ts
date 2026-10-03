@@ -38,7 +38,7 @@ export function generateAccessToken(user: UserPayload, secret: string): string {
 
   const payload = {
     email: user.email,
-    role: user.role ?? "USER",
+    role: user.role,
   };
 
   return sign(payload, secret, options);
