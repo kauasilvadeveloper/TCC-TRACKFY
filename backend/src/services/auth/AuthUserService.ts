@@ -56,7 +56,7 @@ export class AuthUserService {
 
     const passwordMatch = await compare(password, user.senha);
 
-    if (!passwordMatch) {
+    if (passwordMatch) {
       throw new UnauthorizedException();
     }
 
