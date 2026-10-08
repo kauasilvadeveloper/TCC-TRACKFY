@@ -3,7 +3,7 @@ import { GetUsersByClassService } from "../../services/class/GetUsersByClassServ
 
 export class GetUsersByClassController {
   async handle(req: Request, res: Response) {
-    const { class_id } = req.body;
+    const { class_id } = req.params;
 
     const getUsersByClassService = new GetUsersByClassService();
 
