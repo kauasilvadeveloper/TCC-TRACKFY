@@ -2,6 +2,7 @@ import { Response, Router, type Request } from "express";
 import { AuthUserController } from "./controllers/auth/AuthUserController";
 import { isAuthenticated } from "./middlewares/isAuthenticated";
 import { CreateUserController } from "./controllers/auth/CreateUserController";
+import { CreateClassController } from "./controllers/class/CreateClassController";
 
 const router = Router();
 
@@ -11,5 +12,8 @@ router.post(
   isAuthenticated,
   new CreateUserController().handle,
 );
+
+//ROTAS SALA
+router.post("/class", isAuthenticated, new CreateClassController().handle);
 
 export { router };
