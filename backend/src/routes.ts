@@ -6,6 +6,7 @@ import { CreateClassController } from "./controllers/class/CreateClassController
 import { CreateProjectController } from "./controllers/project/CreateProjectController";
 import { UpdateProjectController } from "./controllers/project/UpdateProjectController";
 import { DeleteProjectController } from "./controllers/project/DeleteProjectController";
+import { GetUsersByClassController } from "./controllers/class/GetUsersByClassController";
 
 const router = Router();
 
@@ -18,6 +19,7 @@ router.post(
 
 //ROTAS SALA
 router.post("/class", isAuthenticated, new CreateClassController().handle);
+router.get("/class", isAuthenticated, new GetUsersByClassController().handle);
 
 //ROTAS PROJETO
 router.post("/project", isAuthenticated, new CreateProjectController().handle);
