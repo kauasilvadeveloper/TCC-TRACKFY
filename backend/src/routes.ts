@@ -15,5 +15,10 @@ router.post(
 
 //ROTAS SALA
 router.post("/class", isAuthenticated, new CreateClassController().handle);
+router.get(
+  "/class?class_id",
+  isAuthenticated,
+  new GetUsersByClassController().handle,
+);
 
 export { router };
