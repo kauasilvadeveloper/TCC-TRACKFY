@@ -1,18 +1,30 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { CreateUserService } from "../../services/auth/CreateUserService";
 
-class CreateUserController {
-  async handle(req: Request, res: Response) {
-    const { user_role } = req;
+export class CreateUserController {
+  async handle(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<Response | void> {
+    try {
+      // Extraído do middleware de autenticação JWT/Sessão
+      const creatorRole = req.user_role;
+      const { name, email, password, role } = req.body;
 
-    const { name, email, password, role } = req.body;
+      const createUserService = new CreateUserService();
 
-    const createUserService = new CreateUserService();
+      const user = await createUserService.execute({
+        creatorRole,
+        name,
+        email,
+        password,
+        role,
+      });
 
-    const user = createUserService.execute({ name, email, password, role });
-
-    return res.json({ user_role });
+      return res.status(201).json(user);
+    } catch (error) {
+      next(error);
+    }
   }
 }
-
-export { CreateUserController };

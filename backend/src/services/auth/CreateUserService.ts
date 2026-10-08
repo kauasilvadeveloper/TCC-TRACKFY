@@ -1,7 +1,8 @@
 import { hash } from "bcryptjs";
 import { prisma } from "../../prisma";
 
-interface UserRequest {
+interface CreateUserDTO {
+  creatorRole?: string;
   name: string;
   email: string;
   password: string;
@@ -9,33 +10,55 @@ interface UserRequest {
 }
 
 export class CreateUserService {
-  async execute({ name, email, password, role }: UserRequest) {
-    const validEmailAddress = ["@aluno.senai.br", "@portalsesisp.org.br"];
-
-    if (!email) {
-      throw new Error("Email incorrect");
+  async execute({ creatorRole, name, email, password, role }: CreateUserDTO) {
+    // 1. Controle de Acesso (RBAC)
+    const allowedRoles = ["coordenador", "professor"];
+    if (!creatorRole || !allowedRoles.includes(creatorRole.toLowerCase())) {
+      throw new Error(
+        "Acesso negado: Permissão insuficiente para cadastrar usuários.",
+      );
     }
 
-    // Verificar se esse email já foi cadastrado na plataforma
-    const userAlreadyExists = await prisma.usuario.findFirst({
-      where: {
-        email: email,
-      },
+    // 2. Validação de Email e Domínio Acadêmico
+    if (!email) {
+      throw new Error("Email incorreto.");
+    }
+
+    const validDomains = ["@aluno.senai.br", "@portalsesisp.org.br"];
+    const hasValidDomain = validDomains.some((domain) =>
+      email.endsWith(domain),
+    );
+    if (!hasValidDomain) {
+      throw new Error("Domínio de e-mail não permitido para cadastro.");
+    }
+
+    // 3. Verificação de Duplicidade
+    const userAlreadyExists = await prisma.usuario.findUnique({
+      where: { email },
     });
 
     if (userAlreadyExists) {
-      throw new Error("User already exists");
+      throw new Error("Usuário já cadastrado.");
     }
 
+    // 4. Hash da Senha e Persistência
     const passwordHash = await hash(password, 8);
 
-    const user = prisma.usuario.create({
+    const user = await prisma.usuario.create({
       data: {
         nome: name,
         email: email,
         senha: passwordHash,
-        cargo_escola: role,
+        cargoEscola: role, // Nome da propriedade no schema Prisma em camelCase
+      },
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        cargoEscola: true,
       },
     });
+
+    return user;
   }
 }
