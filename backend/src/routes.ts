@@ -9,6 +9,8 @@ import { DeleteProjectController } from "./controllers/project/DeleteProjectCont
 import { GetUsersByClassController } from "./controllers/class/GetUsersByClassController";
 import { CreateKanbanController } from "./controllers/kanban/CreateKanbanController";
 import { CreateSprintController } from "./controllers/sprint/CreateSprintController";
+import { GetTasksBySprintService } from "./services/sprint/GetTasksBySprintService";
+import { GetTasksBySprintController } from "./controllers/sprint/GetTasksBySprintController";
 
 const router = Router();
 
@@ -37,5 +39,6 @@ router.post("/kanban", isAuthenticated, new CreateKanbanController().handle);
 
 //ROTAS SPRINT
 router.post("/sprint", isAuthenticated, new CreateSprintController().handle);
+router.get("/sprint", isAuthenticated, new GetTasksBySprintController().handle);
 
 export { router };
