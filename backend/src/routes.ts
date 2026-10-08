@@ -4,6 +4,7 @@ import { isAuthenticated } from "./middlewares/isAuthenticated";
 import { CreateUserController } from "./controllers/auth/CreateUserController";
 import { CreateClassController } from "./controllers/class/CreateClassController";
 import { CreateProjectController } from "./controllers/project/CreateProjectController";
+import { UpdateProjectController } from "./controllers/project/UpdateProjectController";
 
 const router = Router();
 
@@ -19,5 +20,6 @@ router.post("/class", isAuthenticated, new CreateClassController().handle);
 
 //ROTAS PROJETO
 router.post("/project", isAuthenticated, new CreateProjectController().handle);
+router.patch("/project", isAuthenticated, new UpdateProjectController().handle);
 
 export { router };
