@@ -8,6 +8,7 @@ import { UpdateProjectController } from "./controllers/project/UpdateProjectCont
 import { DeleteProjectController } from "./controllers/project/DeleteProjectController";
 import { GetUsersByClassController } from "./controllers/class/GetUsersByClassController";
 import { CreateKanbanController } from "./controllers/kanban/CreateKanbanController";
+import { CreateSprintController } from "./controllers/sprint/CreateSprintController";
 
 const router = Router();
 
@@ -33,5 +34,8 @@ router.delete(
 
 //ROTAS KANBAN
 router.post("/kanban", isAuthenticated, new CreateKanbanController().handle);
+
+//ROTAS SPRINT
+router.post("/sprint", isAuthenticated, new CreateSprintController().handle);
 
 export { router };
