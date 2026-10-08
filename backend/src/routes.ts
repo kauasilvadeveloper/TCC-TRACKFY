@@ -30,4 +30,7 @@ router.delete(
   new DeleteProjectController().handle,
 );
 
+//ROTAS KANBAN
+router.post("/kanban", isAuthenticated);
+
 export { router };
