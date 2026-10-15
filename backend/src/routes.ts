@@ -40,5 +40,10 @@ router.post("/kanban", isAuthenticated, new CreateKanbanController().handle);
 //ROTAS SPRINT
 router.post("/sprint", isAuthenticated, new CreateSprintController().handle);
 router.get("/sprint", isAuthenticated, new GetTasksBySprintController().handle);
+router.get(
+  "/sprint/project/:projectId",
+  isAuthenticated,
+  new GetTasksBySprintController().handle,
+);
 
 export { router };
