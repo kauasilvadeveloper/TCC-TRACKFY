@@ -19,6 +19,7 @@ import { CreateTaskController } from "./controllers/task/CreateTaskController";
 import { MoveTaskController } from "./controllers/task/MoveTaskController";
 import { DeleteTaskController } from "./controllers/task/DeleteTaskController";
 import { GetClassesByUserController } from "./controllers/class/GetClassesByUserController";
+import { JoinClassController } from "./controllers/class/JoinClassController";
 
 const router = Router();
 
@@ -37,6 +38,7 @@ router.get(
   isAuthenticated,
   new GetClassesByUserController().handle,
 );
+router.post("/class/join", isAuthenticated, new JoinClassController().handle);
 
 //ROTAS PROJETO
 router.post("/project", isAuthenticated, new CreateProjectController().handle);
