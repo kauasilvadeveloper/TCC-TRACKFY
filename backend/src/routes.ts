@@ -13,6 +13,7 @@ import { GetTasksBySprintService } from "./services/sprint/GetTasksBySprintServi
 import { GetTasksBySprintController } from "./controllers/sprint/GetTasksBySprintController";
 import { ReopenSprintController } from "./controllers/sprint/ReopenSprintController";
 import { UpdateSprintController } from "./controllers/sprint/UpdateSprintController";
+import { GetKanbanByProjectController } from "./controllers/kanban/GetKanbanByProjectController";
 
 const router = Router();
 
@@ -38,6 +39,11 @@ router.delete(
 
 //ROTAS KANBAN
 router.post("/kanban", isAuthenticated, new CreateKanbanController().handle);
+router.get(
+  "/kanban/:projectId",
+  isAuthenticated,
+  new GetKanbanByProjectController().handle,
+);
 
 //ROTAS SPRINT
 router.post("/sprint", isAuthenticated, new CreateSprintController().handle);
