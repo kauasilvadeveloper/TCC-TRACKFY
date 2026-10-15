@@ -23,6 +23,7 @@ import { JoinClassController } from "./controllers/class/JoinClassController";
 import { GetProjectsByUserController } from "./controllers/project/GetProjectsByUserController";
 import { AddProjectMemberController } from "./controllers/project/AddProjectMemberController";
 import { GetProjectByIdController } from "./controllers/project/GetProjectByIdController";
+import { LinkGithubRepositoryController } from "./controllers/project/LinkGithubRepositoryController";
 
 const router = Router();
 
@@ -65,6 +66,13 @@ router.get(
   "/project/:id",
   isAuthenticated,
   new GetProjectByIdController().handle,
+);
+
+//ROTAS GITHUB
+router.post(
+  "/project/github",
+  isAuthenticated,
+  new LinkGithubRepositoryController().handle,
 );
 
 //ROTAS KANBAN
