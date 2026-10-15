@@ -14,6 +14,7 @@ import { GetTasksBySprintController } from "./controllers/sprint/GetTasksBySprin
 import { ReopenSprintController } from "./controllers/sprint/ReopenSprintController";
 import { UpdateSprintController } from "./controllers/sprint/UpdateSprintController";
 import { GetKanbanByProjectController } from "./controllers/kanban/GetKanbanByProjectController";
+import { CreateColumnController } from "./controllers/kanban/CreateColumnController";
 
 const router = Router();
 
@@ -43,6 +44,11 @@ router.get(
   "/kanban/:projectId",
   isAuthenticated,
   new GetKanbanByProjectController().handle,
+);
+router.post(
+  "/kanban/column",
+  isAuthenticated,
+  new CreateColumnController().handle,
 );
 
 //ROTAS SPRINT
