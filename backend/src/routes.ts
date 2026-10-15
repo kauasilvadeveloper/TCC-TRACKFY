@@ -18,6 +18,7 @@ import { CreateColumnController } from "./controllers/kanban/CreateColumnControl
 import { CreateTaskController } from "./controllers/task/CreateTaskController";
 import { MoveTaskController } from "./controllers/task/MoveTaskController";
 import { DeleteTaskController } from "./controllers/task/DeleteTaskController";
+import { GetClassesByUserController } from "./controllers/class/GetClassesByUserController";
 
 const router = Router();
 
@@ -31,6 +32,11 @@ router.post(
 //ROTAS SALA
 router.post("/class", isAuthenticated, new CreateClassController().handle);
 router.get("/class", isAuthenticated, new GetUsersByClassController().handle);
+router.get(
+  "/classes",
+  isAuthenticated,
+  new GetClassesByUserController().handle,
+);
 
 //ROTAS PROJETO
 router.post("/project", isAuthenticated, new CreateProjectController().handle);
