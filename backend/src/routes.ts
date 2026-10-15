@@ -52,6 +52,7 @@ router.post(
   new CreateColumnController().handle,
 );
 router.post("/task", isAuthenticated, new CreateTaskController().handle);
+router.patch("/task", isAuthenticated, new UpdateSprintController().handle);
 
 //ROTAS SPRINT
 router.post("/sprint", isAuthenticated, new CreateSprintController().handle);
