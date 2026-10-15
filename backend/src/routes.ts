@@ -11,6 +11,7 @@ import { CreateKanbanController } from "./controllers/kanban/CreateKanbanControl
 import { CreateSprintController } from "./controllers/sprint/CreateSprintController";
 import { GetTasksBySprintService } from "./services/sprint/GetTasksBySprintService";
 import { GetTasksBySprintController } from "./controllers/sprint/GetTasksBySprintController";
+import { ReopenSprintController } from "./controllers/sprint/ReopenSprintController";
 
 const router = Router();
 
@@ -44,6 +45,11 @@ router.get(
   "/sprint/project/:projectId",
   isAuthenticated,
   new GetTasksBySprintController().handle,
+);
+router.patch(
+  "/sprint/reopen",
+  isAuthenticated,
+  new ReopenSprintController().handle,
 );
 
 export { router };
