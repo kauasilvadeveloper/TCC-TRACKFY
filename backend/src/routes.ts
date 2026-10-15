@@ -12,6 +12,7 @@ import { CreateSprintController } from "./controllers/sprint/CreateSprintControl
 import { GetTasksBySprintService } from "./services/sprint/GetTasksBySprintService";
 import { GetTasksBySprintController } from "./controllers/sprint/GetTasksBySprintController";
 import { ReopenSprintController } from "./controllers/sprint/ReopenSprintController";
+import { UpdateSprintController } from "./controllers/sprint/UpdateSprintController";
 
 const router = Router();
 
@@ -51,5 +52,6 @@ router.patch(
   isAuthenticated,
   new ReopenSprintController().handle,
 );
+router.patch("/sprint", isAuthenticated, new UpdateSprintController().handle);
 
 export { router };
