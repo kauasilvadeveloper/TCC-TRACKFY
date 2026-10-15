@@ -22,6 +22,7 @@ import { GetClassesByUserController } from "./controllers/class/GetClassesByUser
 import { JoinClassController } from "./controllers/class/JoinClassController";
 import { GetProjectsByUserController } from "./controllers/project/GetProjectsByUserController";
 import { AddProjectMemberController } from "./controllers/project/AddProjectMemberController";
+import { GetProjectByIdController } from "./controllers/project/GetProjectByIdController";
 
 const router = Router();
 
@@ -59,6 +60,11 @@ router.post(
   "/project/member",
   isAuthenticated,
   new AddProjectMemberController().handle,
+);
+router.get(
+  "/project/:id",
+  isAuthenticated,
+  new GetProjectByIdController().handle,
 );
 
 //ROTAS KANBAN
