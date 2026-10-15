@@ -21,6 +21,7 @@ import { DeleteTaskController } from "./controllers/task/DeleteTaskController";
 import { GetClassesByUserController } from "./controllers/class/GetClassesByUserController";
 import { JoinClassController } from "./controllers/class/JoinClassController";
 import { GetProjectsByUserController } from "./controllers/project/GetProjectsByUserController";
+import { AddProjectMemberController } from "./controllers/project/AddProjectMemberController";
 
 const router = Router();
 
@@ -53,6 +54,11 @@ router.delete(
   "/project",
   isAuthenticated,
   new DeleteProjectController().handle,
+);
+router.post(
+  "/project/member",
+  isAuthenticated,
+  new AddProjectMemberController().handle,
 );
 
 //ROTAS KANBAN
