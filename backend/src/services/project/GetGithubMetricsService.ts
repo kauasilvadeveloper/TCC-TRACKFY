@@ -1,3 +1,4 @@
+import { Octokit } from "@octokit/rest";
 import { prisma } from "../../prisma";
 
 export interface GetGithubMetricsDTO {
@@ -15,24 +16,20 @@ export interface GithubMetricsResponse {
   recentCommitsCount: number;
 }
 
-interface GithubPullRequest {
-  state: "open" | "closed";
-}
-
 export class GetGithubMetricsService {
   async execute({
     projectId,
   }: GetGithubMetricsDTO): Promise<GithubMetricsResponse> {
-    if (!projectId || isNaN(projectId) || projectId <= 0) {
+    if (!projectId || Number.isNaN(projectId) || projectId <= 0) {
       throw new Error(
         "O ID do projeto é obrigatório e deve ser um número inteiro válido.",
       );
     }
 
-    // 1. Consulta ao banco para resgatar o repositório/token salvo no projeto
+    // 1. Projeção estrita no banco resgatando apenas os campos estritamente necessários
     const project = await prisma.projeto.findUnique({
       where: { id: projectId },
-      select: { id: true, tokenGithub: true, tituloProjeto: true },
+      select: { id: true, tokenGithub: true },
     });
 
     if (!project) {
@@ -45,64 +42,63 @@ export class GetGithubMetricsService {
       );
     }
 
-    // 2. Parser utilitário para extrair 'owner' e 'repo' do campo salvo (URL ou owner/repo)
+    // 2. Extração segura de owner/repo do campo persistido
     const repoInfo = this.extractOwnerAndRepo(project.tokenGithub);
     if (!repoInfo) {
       throw new Error(
-        "O vínculo do GitHub armazenado não é uma URL ou repositório válido (ex: 'usuario/repositorio').",
+        "O vínculo do GitHub armazenado não é uma URL ou repositório válido (ex: 'owner/repo').",
       );
     }
 
     const { owner, repo } = repoInfo;
 
-    try {
-      const headers: Record<string, string> = {
-        "User-Agent": "TCC-Kanban-App",
-        Accept: "application/vnd.github.v3+json",
-      };
+    // 3. Instanciação do Octokit utilizando Token autenticado (previne Rate Limit anônimo)
+    const octokit = new Octokit({
+      auth: process.env.GITHUB_GLOBAL_TOKEN,
+    });
 
-      // 3. Chamadas concorrentes à API do GitHub via Native Fetch (Node.js 18+)
-      const [branchesRes, prsRes, commitsRes] = await Promise.all([
-        fetch(`https://api.github.com/repos/${owner}/${repo}/branches`, {
-          headers,
-        }),
-        fetch(
-          `https://api.github.com/repos/${owner}/${repo}/pulls?state=all&per_page=100`,
-          { headers },
-        ),
-        fetch(
-          `https://api.github.com/repos/${owner}/${repo}/commits?per_page=100`,
-          { headers },
-        ),
+    try {
+      // 4. Execução concorrente via SDK Oficial do Octokit
+      const [branchesRes, pullsRes, commitsRes] = await Promise.all([
+        octokit.rest.repos.listBranches({ owner, repo, per_page: 100 }),
+        octokit.rest.pulls.list({ owner, repo, state: "all", per_page: 100 }),
+        octokit.rest.repos.listCommits({ owner, repo, per_page: 100 }),
       ]);
 
-      if (!branchesRes.ok || !prsRes.ok || !commitsRes.ok) {
-        throw new Error(
-          "Não foi possível consultar os dados na API do GitHub. Verifique a visibilidade e permissões do repositório.",
-        );
-      }
-
-      const branches = (await branchesRes.json()) as unknown[];
-      const pulls = (await prsRes.json()) as GithubPullRequest[];
-      const commits = (await commitsRes.json()) as unknown[];
-
-      const openPRs = pulls.filter((pr) => pr.state === "open").length;
-      const closedPRs = pulls.filter((pr) => pr.state === "closed").length;
+      const openPRs = pullsRes.data.filter((pr) => pr.state === "open").length;
+      const closedPRs = pullsRes.data.filter(
+        (pr) => pr.state === "closed",
+      ).length;
 
       return {
         repository: `${owner}/${repo}`,
-        branchesCount: branches.length,
+        branchesCount: branchesRes.data.length,
         pullRequests: {
-          total: pulls.length,
+          total: pullsRes.data.length,
           open: openPRs,
           closed: closedPRs,
         },
-        recentCommitsCount: commits.length,
+        recentCommitsCount: commitsRes.data.length,
       };
-    } catch (error) {
-      if (error instanceof Error && error.message) {
+    } catch (error: unknown) {
+      if (typeof error === "object" && error !== null && "status" in error) {
+        const githubError = error as { status: number; message?: string };
+        if (githubError.status === 404) {
+          throw new Error(
+            "Repositório do GitHub não encontrado ou sem permissão de acesso.",
+          );
+        }
+        if (githubError.status === 401) {
+          throw new Error(
+            "Token de autenticação do GitHub inválido ou expirado.",
+          );
+        }
+      }
+
+      if (error instanceof Error) {
         throw new Error(error.message);
       }
+
       throw new Error("Falha de comunicação com a API do GitHub.");
     }
   }
@@ -113,7 +109,7 @@ export class GetGithubMetricsService {
     const cleanInput = input.replace(/\.git$/, "").trim();
     const urlMatch = cleanInput.match(/github\.com\/([^/]+)\/([^/]+)/);
 
-    if (urlMatch && urlMatch[1] && urlMatch[2]) {
+    if (urlMatch?.[1] && urlMatch?.[2]) {
       return { owner: urlMatch[1], repo: urlMatch[2] };
     }
 
