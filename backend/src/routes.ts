@@ -43,6 +43,7 @@ import { GetTasksBySprintController } from "./controllers/sprint/GetTasksBySprin
 import { ReopenSprintController } from "./controllers/sprint/ReopenSprintController";
 import { UpdateSprintController } from "./controllers/sprint/UpdateSprintController";
 import { GetSprintsByProjectController } from "./controllers/sprint/GetSprintByProjectController";
+import { GetCommitsByBranchController } from "./controllers/project/GetCommitsByBranchController";
 
 const router = Router();
 
@@ -69,19 +70,23 @@ router.get(
 router.post("/class/join", isAuthenticated, new JoinClassController().handle);
 
 // ================= PROJETO =================
-router.get(
-  "/project",
-  isAuthenticated,
-  new GetProjectsByUserController().handle,
-);
+
 router.post("/project", isAuthenticated, new CreateProjectController().handle);
+
 router.get(
   "/project/:id",
   isAuthenticated,
   new GetProjectByIdController().handle,
 );
+
+router.get(
+  "/all-projects",
+  isAuthenticated,
+  new GetProjectsByUserController().handle,
+);
+
 router.patch(
-  "/project/:id",
+  "/project/edit/:id",
   isAuthenticated,
   new UpdateProjectController().handle,
 ); // [AJUSTADA] Parâmetro na URL
@@ -111,6 +116,12 @@ router.get(
   "/project/github/branches",
   isAuthenticated,
   new GetGithubBranchesController().handle,
+);
+
+router.get(
+  "/project/github/:branch/commits",
+  isAuthenticated,
+  new GetCommitsByBranchController().handle,
 );
 
 // ================= KANBAN & COLUNAS =================
