@@ -29,7 +29,10 @@ export class CreateTaskService {
       );
     }
 
-    if (!fkColuna || isNaN(fkColuna) || !fkSprint || isNaN(fkSprint)) {
+    const colunaIdNum = Number(fkColuna);
+    const sprintIdNum = Number(fkSprint);
+
+    if (isNaN(colunaIdNum) || isNaN(sprintIdNum)) {
       throw new Error("ID de Coluna e ID de Sprint válidos são obrigatórios.");
     }
 
@@ -39,22 +42,38 @@ export class CreateTaskService {
       throw new Error("A data limite (prazoTarefa) informada é inválida.");
     }
 
-    // 3. Validação paralela de existência dos recursos pai (Parallel I/O)
-    const [colunaExists, sprintExists] = await Promise.all([
+    // 3. Normalização dos IDs dos usuários (garante array numérico válido)
+    const validUsuarioIds = Array.isArray(usuarioIds)
+      ? usuarioIds.map((id) => Number(id)).filter((id) => !isNaN(id))
+      : [];
+
+    // 4. Validação paralela de existência dos recursos (Coluna, Sprint e Usuários)
+    const [colunaExists, sprintExists, countUsuarios] = await Promise.all([
       prisma.coluna.findUnique({
-        where: { id: fkColuna },
+        where: { id: colunaIdNum },
         select: { id: true },
       }),
       prisma.sprint.findUnique({
-        where: { id: fkSprint },
+        where: { id: sprintIdNum },
         select: { id: true },
       }),
+      validUsuarioIds.length > 0
+        ? prisma.usuario.count({
+            where: { id: { in: validUsuarioIds } },
+          })
+        : Promise.resolve(0),
     ]);
 
     if (!colunaExists) throw new Error("A coluna informada não existe.");
     if (!sprintExists) throw new Error("A sprint informada não existe.");
+    if (
+      validUsuarioIds.length > 0 &&
+      countUsuarios !== validUsuarioIds.length
+    ) {
+      throw new Error("Um ou mais usuários informados não existem.");
+    }
 
-    // 4. Persistence & Nested Write na tabela pivô (tarefa_usuario)
+    // 5. Persistence & Nested Write com connect explícito no Prisma
     const task = await prisma.tarefa.create({
       data: {
         tituloTarefa: tituloTarefa.trim(),
@@ -62,14 +81,17 @@ export class CreateTaskService {
         status: status.trim(),
         stack: stack.trim(),
         prazoTarefa: parsedPrazo,
-        fkColuna,
-        fkSprint,
-        ...(usuarioIds &&
-          usuarioIds.length > 0 && {
-            usuarios: {
-              create: usuarioIds.map((fkUsuario) => ({ fkUsuario })),
-            },
-          }),
+        fkColuna: colunaIdNum,
+        fkSprint: sprintIdNum,
+        ...(validUsuarioIds.length > 0 && {
+          usuarios: {
+            create: validUsuarioIds.map((userId) => ({
+              usuario: {
+                connect: { id: userId },
+              },
+            })),
+          },
+        }),
       },
       select: {
         id: true,
