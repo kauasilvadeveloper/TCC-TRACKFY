@@ -1,3 +1,4 @@
+import { Octokit } from "@octokit/rest";
 import { prisma } from "../../prisma";
 
 export interface GetGithubBranchesDTO {
@@ -10,19 +11,11 @@ export interface GithubBranchResponse {
   commitSha: string;
 }
 
-interface RawGithubBranch {
-  name: string;
-  protected: boolean;
-  commit: {
-    sha: string;
-  };
-}
-
 export class GetGithubBranchesService {
   async execute({
     projectId,
   }: GetGithubBranchesDTO): Promise<GithubBranchResponse[]> {
-    if (!projectId || isNaN(projectId) || projectId <= 0) {
+    if (!projectId || Number.isNaN(projectId) || projectId <= 0) {
       throw new Error(
         "O ID do projeto é obrigatório e deve ser um número inteiro válido.",
       );
@@ -48,42 +41,50 @@ export class GetGithubBranchesService {
     const repoInfo = this.extractOwnerAndRepo(project.tokenGithub);
     if (!repoInfo) {
       throw new Error(
-        "O vínculo do GitHub armazenado não é uma URL ou repositório válido (ex: 'usuario/repositorio').",
+        "O vínculo do GitHub armazenado não é uma URL ou repositório válido (ex: 'owner/repo').",
       );
     }
 
     const { owner, repo } = repoInfo;
 
+    // 3. Instância do Octokit utilizando Token Global autenticado
+    const octokit = new Octokit({
+      auth: process.env.GITHUB_GLOBAL_TOKEN,
+    });
+
     try {
-      // 3. Consulta as branches do repositório via Native Fetch API
-      const response = await fetch(
-        `https://api.github.com/repos/${owner}/${repo}/branches?per_page=100`,
-        {
-          headers: {
-            "User-Agent": "TCC-Kanban-App",
-            Accept: "application/vnd.github.v3+json",
-          },
-        },
-      );
+      // 4. Consulta as branches via SDK Oficial
+      const { data } = await octokit.rest.repos.listBranches({
+        owner,
+        repo,
+        per_page: 100,
+      });
 
-      if (!response.ok) {
-        throw new Error(
-          "Não foi possível consultar as branches na API do GitHub. Verifique a visibilidade e permissões do repositório.",
-        );
-      }
-
-      const branches = (await response.json()) as RawGithubBranch[];
-
-      // 4. Mapeia apenas os dados relevantes para a interface do sistema
-      return branches.map((branch) => ({
+      // 5. Projeção DTO para sanitização de dados no payload final
+      return data.map((branch) => ({
         name: branch.name,
         protected: branch.protected,
         commitSha: branch.commit.sha,
       }));
-    } catch (error) {
-      if (error instanceof Error && error.message) {
+    } catch (error: unknown) {
+      if (typeof error === "object" && error !== null && "status" in error) {
+        const githubError = error as { status: number };
+        if (githubError.status === 404) {
+          throw new Error(
+            "Repositório não encontrado no GitHub ou sem permissão de acesso.",
+          );
+        }
+        if (githubError.status === 401) {
+          throw new Error(
+            "Token de autenticação do GitHub inválido ou expirado.",
+          );
+        }
+      }
+
+      if (error instanceof Error) {
         throw new Error(error.message);
       }
+
       throw new Error(
         "Falha de comunicação com a API do GitHub ao listar branches.",
       );
@@ -96,7 +97,7 @@ export class GetGithubBranchesService {
     const cleanInput = input.replace(/\.git$/, "").trim();
     const urlMatch = cleanInput.match(/github\.com\/([^/]+)\/([^/]+)/);
 
-    if (urlMatch && urlMatch[1] && urlMatch[2]) {
+    if (urlMatch?.[1] && urlMatch?.[2]) {
       return { owner: urlMatch[1], repo: urlMatch[2] };
     }
 
