@@ -3,16 +3,13 @@ import { GetTasksBySprintService } from "../../services/sprint/GetTasksBySprintS
 
 export class GetTasksBySprintController {
   async handle(req: Request, res: Response) {
-    const { fkSprint } = req.params;
+    const { id } = req.params;
 
     const creatorRole = req.user_role;
 
     const getTasksByService = new GetTasksBySprintService();
 
-    const tarefas = await getTasksByService.execute(
-      Number(fkSprint),
-      creatorRole,
-    );
+    const tarefas = await getTasksByService.execute(Number(id), creatorRole);
 
     return res.status(200).json(tarefas);
   }
