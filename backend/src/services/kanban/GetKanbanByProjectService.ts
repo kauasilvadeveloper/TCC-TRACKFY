@@ -40,6 +40,12 @@ export class GetKanbanByProjectService {
                 status: true,
                 stack: true,
                 prazoTarefa: true,
+                comentarios: {
+                  select: {
+                    usuario: true,
+                    conteudo: true,
+                  },
+                },
                 usuarios: {
                   select: {
                     usuario: {
