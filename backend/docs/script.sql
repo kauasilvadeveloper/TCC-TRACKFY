@@ -52,14 +52,14 @@ INSERT INTO "usuario" (
         'Giovani Bossert',
         'giovani@example.com',
         '$2b$10$exampleHashGiovani',
-        'Administrador'
+        'Coordenador'
     ),
     (
         2,
         'Ana Souza',
         'ana@example.com',
         '$2b$10$exampleHashAna',
-        'Professora'
+        'Professor'
     ),
     (
         3,
@@ -73,7 +73,7 @@ INSERT INTO "usuario" (
         'Mariana Santos',
         'mariana@example.com',
         '$2b$10$exampleHashMariana',
-        'Coordenadora'
+        'Coordenador'
     ),
     (
         5,
@@ -87,7 +87,7 @@ INSERT INTO "usuario" (
         'Beatriz Lima',
         'beatriz@example.com',
         '$2b$10$exampleHashBeatriz',
-        'Aluna'
+        'Aluno'
     );
 
 
