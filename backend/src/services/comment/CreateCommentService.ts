@@ -54,7 +54,6 @@ export class CreateCommentService {
       select: {
         id: true,
         conteudo: true,
-        criadoEm: true,
         usuario: {
           select: {
             id: true,
