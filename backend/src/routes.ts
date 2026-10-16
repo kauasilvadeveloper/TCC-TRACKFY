@@ -17,7 +17,6 @@ import { CreateProjectController } from "./controllers/project/CreateProjectCont
 import { UpdateProjectController } from "./controllers/project/UpdateProjectController";
 import { DeleteProjectController } from "./controllers/project/DeleteProjectController";
 import { AddProjectMemberController } from "./controllers/project/AddProjectMemberController";
-// import { RemoveProjectMemberController } from "./controllers/project/RemoveProjectMemberController";
 import { GetProjectByIdController } from "./controllers/project/GetProjectByIdController";
 
 // GitHub Controllers
@@ -44,7 +43,6 @@ import { GetTasksBySprintController } from "./controllers/sprint/GetTasksBySprin
 import { ReopenSprintController } from "./controllers/sprint/ReopenSprintController";
 import { UpdateSprintController } from "./controllers/sprint/UpdateSprintController";
 import { GetSprintsByProjectController } from "./controllers/sprint/GetSprintByProjectController";
-// import { DeleteSprintController } from "./controllers/sprint/DeleteSprintController";
 
 const router = Router();
 
