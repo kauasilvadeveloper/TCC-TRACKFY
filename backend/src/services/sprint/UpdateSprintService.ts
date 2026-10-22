@@ -1,3 +1,4 @@
+import { AppError } from "../../errors/AppError";
 import { prisma } from "../../prisma";
 
 export interface UpdateSprintDTO {
@@ -14,8 +15,12 @@ export class UpdateSprintService {
     descricaoSprint,
     prazoSprint,
   }: UpdateSprintDTO) {
-    if (!sprintId || isNaN(sprintId)) {
-      throw new Error("ID da sprint é obrigatório e deve ser numérico.");
+    const parsedSprintId = Number(sprintId);
+    if (!sprintId || Number.isNaN(parsedSprintId) || parsedSprintId <= 0) {
+      throw new AppError(
+        "O ID da sprint é obrigatório e deve ser um número inteiro válido.",
+        400, // Bad Request
+      );
     }
 
     const sprint = await prisma.sprint.findUnique({
@@ -23,22 +28,29 @@ export class UpdateSprintService {
     });
 
     if (!sprint) {
-      throw new Error("Sprint não encontrada.");
+      throw new AppError("Sprint não encontrada.", 404); // Not Found
     }
 
     // Regra de Negócio: Impede alteração se a sprint já estiver expirada
     const now = new Date();
     if (sprint.prazoSprint < now) {
-      throw new Error(
+      throw new AppError(
         "Operação negada: A sprint ultrapassou o prazo legal e não pode mais ser editada.",
+        422, // Unprocessable Entity (Regra de Negócio / Estado Inválido)
       );
     }
 
     let parsedNewDeadline: Date | undefined;
     if (prazoSprint) {
       parsedNewDeadline = new Date(prazoSprint);
-      if (isNaN(parsedNewDeadline.getTime()) || parsedNewDeadline < now) {
-        throw new Error("O novo prazo deve ser uma data futura válida.");
+      if (
+        Number.isNaN(parsedNewDeadline.getTime()) ||
+        parsedNewDeadline < now
+      ) {
+        throw new AppError(
+          "O novo prazo deve ser uma data futura válida.",
+          400, // Bad Request
+        );
       }
     }
 

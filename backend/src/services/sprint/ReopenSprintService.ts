@@ -1,3 +1,4 @@
+import { AppError } from "../../errors/AppError";
 import { prisma } from "../../prisma";
 
 interface ReopenSprintDTO {
@@ -16,15 +17,17 @@ export class ReopenSprintService {
   }: ReopenSprintDTO) {
     // 1. Autorização (RBAC - Apenas Professor)
     if (!userRole || userRole.toLowerCase() !== "professor") {
-      throw new Error(
+      throw new AppError(
         "Acesso negado: Apenas professores podem reabrir sprints vencidas.",
+        403,
       );
     }
 
     // 2. Validação de presença dos campos
     if (!sprintId || !justificativa?.trim() || !novoPrazo) {
-      throw new Error(
+      throw new AppError(
         "Dados insuficientes: sprintId, justificativa e novoPrazo são obrigatórios.",
+        400,
       );
     }
 
@@ -34,13 +37,13 @@ export class ReopenSprintService {
     });
 
     if (!sprint) {
-      throw new Error("Sprint não encontrada.");
+      throw new AppError("Sprint não encontrada.", 404);
     }
 
     // 4. Validação do novo prazo
     const dataNovoPrazo = new Date(novoPrazo);
     if (isNaN(dataNovoPrazo.getTime()) || dataNovoPrazo <= new Date()) {
-      throw new Error("O novo prazo deve ser uma data futura válida.");
+      throw new AppError("O novo prazo deve ser uma data futura válida.", 400);
     }
 
     // 5. Atualização da sprint estendendo o prazo e gravando o histórico da justificativa

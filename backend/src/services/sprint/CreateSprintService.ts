@@ -1,3 +1,4 @@
+import { AppError } from "../../errors/AppError";
 import { prisma } from "../../prisma";
 
 interface CreateSprintDTO {
@@ -16,8 +17,9 @@ export class CreateSprintService {
   }: CreateSprintDTO) {
     const allowedRoles = ["aluno", "professor"];
     if (!creatorRole || !allowedRoles.includes(creatorRole.toLowerCase())) {
-      throw new Error(
+      throw new AppError(
         "Acesso negado: Permissão insuficiente para criar sprint.",
+        403, // Forbidden
       );
     }
 
