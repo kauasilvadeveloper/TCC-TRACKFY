@@ -1,9 +1,10 @@
+import { AppError } from "../../errors/AppError";
 import { prisma } from "../../prisma";
 
 export class GetClassesByUserService {
   async execute(userId: number) {
-    if (!userId || isNaN(userId) || userId <= 0) {
-      throw new Error("Identificador do usuário inválido ou não autenticado.");
+    if (!userId || Number.isNaN(Number(userId)) || userId <= 0) {
+      throw new AppError("Identificador do usuário inválido.", 400); // 400 Bad Request
     }
 
     // 1. Verificação de existência do usuário
@@ -13,7 +14,7 @@ export class GetClassesByUserService {
     });
 
     if (!userExists) {
-      throw new Error("Usuário não encontrado.");
+      throw new AppError("Usuário não encontrado.", 404); // 404 Not Found
     }
 
     // 2. Busca todas as salas/turmas associadas ao usuário através da pivô usuario_sala

@@ -1,3 +1,4 @@
+import { AppError } from "../../errors/AppError";
 import { prisma } from "../../prisma";
 
 export interface JoinClassDTO {
@@ -7,13 +8,14 @@ export interface JoinClassDTO {
 
 export class JoinClassService {
   async execute({ userId, salaId }: JoinClassDTO) {
-    if (!userId || isNaN(userId) || userId <= 0) {
-      throw new Error("Identificador do usuário não autenticado ou inválido.");
+    if (!userId || Number.isNaN(Number(userId)) || userId <= 0) {
+      throw new AppError("Identificador do usuário inválido.", 400); // Bad Request
     }
 
-    if (!salaId || isNaN(salaId) || salaId <= 0) {
-      throw new Error(
+    if (!salaId || Number.isNaN(Number(salaId)) || salaId <= 0) {
+      throw new AppError(
         "O código da turma é obrigatório e deve ser um número inteiro válido.",
+        400, // Bad Request
       );
     }
 
@@ -23,13 +25,15 @@ export class JoinClassService {
     });
 
     if (!sala) {
-      throw new Error("Turma não encontrada com o código fornecido.");
+      throw new AppError("Turma não encontrada com o código fornecido.", 404); // Not Found
     }
 
-    // 2. Regra de Negócio: Impede entrada em turmas já encerradas
     const currentYear = new Date().getFullYear();
     if (sala.anoEncerramento < currentYear) {
-      throw new Error("Operação negada: Esta turma já se encontra encerrada.");
+      throw new AppError(
+        "Operação negada: Esta turma já se encontra encerrada.",
+        400, // Bad Request (ou 422 Unprocessable Entity)
+      );
     }
 
     // 3. Checagem de vínculo existente na tabela pivô

@@ -1,3 +1,4 @@
+import { AppError } from "../../errors/AppError";
 import { prisma } from "../../prisma";
 
 export interface CreateClassRequest {
@@ -11,15 +12,17 @@ export class CreateClassService {
 
     const allowedRoles = ["coordenador", "professor"];
     if (!creatorRole || !allowedRoles.includes(creatorRole.toLowerCase())) {
-      throw new Error(
+      throw new AppError(
         "Acesso negado: Permissão insuficiente para criar salas.",
+        403, // Forbidden
       );
     }
 
     const currentYear = new Date().getFullYear();
     if (lastYear < currentYear) {
-      throw new Error(
+      throw new AppError(
         "O ano de encerramento não pode ser menor que o ano atual.",
+        400, // Bad Request (ou 422 Unprocessable Entity)
       );
     }
 
