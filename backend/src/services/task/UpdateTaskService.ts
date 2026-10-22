@@ -1,3 +1,4 @@
+import { AppError } from "../../errors/AppError";
 import { prisma } from "../../prisma";
 
 export interface UpdateTaskDTO {
@@ -24,9 +25,11 @@ export class UpdateTaskService {
     fkSprint,
     usuarioIds,
   }: UpdateTaskDTO) {
-    if (!taskId || isNaN(taskId) || taskId <= 0) {
-      throw new Error(
+    const parsedTaskId = Number(taskId);
+    if (!taskId || Number.isNaN(parsedTaskId) || parsedTaskId <= 0) {
+      throw new AppError(
         "O ID da tarefa é obrigatório e deve ser um número inteiro válido.",
+        400, // Bad Request
       );
     }
 
@@ -37,7 +40,7 @@ export class UpdateTaskService {
     });
 
     if (!existingTask) {
-      throw new Error("Tarefa não encontrada.");
+      throw new AppError("Tarefa não encontrada.", 404);
     }
 
     // 2. Validação condicional de FKs se forem enviadas na atualização
@@ -46,7 +49,8 @@ export class UpdateTaskService {
         where: { id: fkColuna },
         select: { id: true },
       });
-      if (!colunaExists) throw new Error("A coluna informada não existe.");
+      if (!colunaExists)
+        throw new AppError("A coluna informada não existe.", 404);
     }
 
     if (fkSprint) {
@@ -54,7 +58,8 @@ export class UpdateTaskService {
         where: { id: fkSprint },
         select: { id: true },
       });
-      if (!sprintExists) throw new Error("A sprint informada não existe.");
+      if (!sprintExists)
+        throw new AppError("A sprint informada não existe.", 404);
     }
 
     // 3. Reorganização dos responsáveis na tabela pivô (tarefa_usuario)

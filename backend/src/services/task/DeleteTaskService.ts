@@ -1,3 +1,4 @@
+import { AppError } from "../../errors/AppError";
 import { prisma } from "../../prisma";
 
 export interface DeleteTaskDTO {
@@ -6,9 +7,12 @@ export interface DeleteTaskDTO {
 
 export class DeleteTaskService {
   async execute({ taskId }: DeleteTaskDTO) {
-    if (!taskId || isNaN(taskId) || taskId <= 0) {
-      throw new Error(
+    const parsedTaskId = Number(taskId);
+
+    if (!taskId || Number.isNaN(parsedTaskId) || parsedTaskId <= 0) {
+      throw new AppError(
         "O ID da tarefa é obrigatório e deve ser um número inteiro válido.",
+        400, // Bad Request
       );
     }
 
@@ -19,7 +23,7 @@ export class DeleteTaskService {
     });
 
     if (!task) {
-      throw new Error("Tarefa não encontrada.");
+      throw new AppError("Tarefa não encontrada.", 404); // Not Found
     }
 
     // 2. Remoção física da tarefa (Cascata configurada na migration para Comentario e TarefaUsuario)

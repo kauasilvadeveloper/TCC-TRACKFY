@@ -1,3 +1,4 @@
+import { AppError } from "../../errors/AppError";
 import { prisma } from "../../prisma";
 
 export interface MoveTaskDTO {
@@ -8,19 +9,27 @@ export interface MoveTaskDTO {
 
 export class MoveTaskService {
   async execute({ taskId, targetColumnId, newStatus }: MoveTaskDTO) {
-    if (!taskId || isNaN(taskId) || taskId <= 0) {
-      throw new Error(
+    const parsedTaskId = Number(taskId);
+    if (!taskId || Number.isNaN(parsedTaskId) || parsedTaskId <= 0) {
+      throw new AppError(
         "O ID da tarefa é obrigatório e deve ser um número inteiro válido.",
+        400, // Bad Request
       );
     }
 
-    if (!targetColumnId || isNaN(targetColumnId) || targetColumnId <= 0) {
-      throw new Error(
+    // 2. Validação do ID da Coluna de Destino (Kanban Validation)
+    const parsedTargetColumnId = Number(targetColumnId);
+    if (
+      !targetColumnId ||
+      Number.isNaN(parsedTargetColumnId) ||
+      parsedTargetColumnId <= 0
+    ) {
+      throw new AppError(
         "O ID da coluna de destino é obrigatório e deve ser um número inteiro válido.",
+        400, // Bad Request
       );
     }
 
-    // 1. Verificação de existência da tarefa e da coluna de destino em paralelo
     const [task, destinationColumn] = await Promise.all([
       prisma.tarefa.findUnique({
         where: { id: taskId },
@@ -33,11 +42,14 @@ export class MoveTaskService {
     ]);
 
     if (!task) {
-      throw new Error("Tarefa não encontrada.");
+      throw new AppError("Tarefa não encontrada.", 404); // Not Found
     }
 
     if (!destinationColumn) {
-      throw new Error("A coluna de destino informada não existe.");
+      throw new AppError(
+        "A coluna de destino informada não existe.",
+        404, // Not Found
+      );
     }
 
     // 2. Se a tarefa já está na coluna solicitada, encerra sem realizar I/O desnecessário

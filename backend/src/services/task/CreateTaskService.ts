@@ -1,3 +1,4 @@
+import { AppError } from "../../errors/AppError";
 import { prisma } from "../../prisma";
 
 export interface CreateTaskDTO {
@@ -22,29 +23,47 @@ export class CreateTaskService {
     fkSprint,
     usuarioIds,
   }: CreateTaskDTO) {
-    // 1. Sanidade e Fail-Fast de entradas obrigatórias
     if (!tituloTarefa?.trim() || !status?.trim() || !stack?.trim()) {
-      throw new Error(
+      throw new AppError(
         "Os campos tituloTarefa, status e stack são obrigatórios.",
+        400, // Bad Request
       );
     }
 
     const colunaIdNum = Number(fkColuna);
     const sprintIdNum = Number(fkSprint);
 
-    if (isNaN(colunaIdNum) || isNaN(sprintIdNum)) {
-      throw new Error("ID de Coluna e ID de Sprint válidos são obrigatórios.");
+    if (
+      !fkColuna ||
+      Number.isNaN(colunaIdNum) ||
+      colunaIdNum <= 0 ||
+      !fkSprint ||
+      Number.isNaN(sprintIdNum) ||
+      sprintIdNum <= 0
+    ) {
+      throw new AppError(
+        "ID de Coluna e ID de Sprint válidos são obrigatórios.",
+        400, // Bad Request
+      );
     }
 
-    // 2. Validação e conversão do prazo
     const parsedPrazo = new Date(prazoTarefa);
-    if (isNaN(parsedPrazo.getTime())) {
-      throw new Error("A data limite (prazoTarefa) informada é inválida.");
+    if (Number.isNaN(parsedPrazo.getTime())) {
+      throw new AppError(
+        "A data limite (prazoTarefa) informada é inválida.",
+        400, // Bad Request
+      );
     }
 
     // 3. Normalização dos IDs dos usuários (garante array numérico válido)
     const validUsuarioIds = Array.isArray(usuarioIds)
-      ? usuarioIds.map((id) => Number(id)).filter((id) => !isNaN(id))
+      ? Array.from(
+          new Set(
+            usuarioIds
+              .map((id) => Number(id))
+              .filter((id) => !Number.isNaN(id) && id > 0),
+          ),
+        )
       : [];
 
     // 4. Validação paralela de existência dos recursos (Coluna, Sprint e Usuários)
@@ -64,13 +83,19 @@ export class CreateTaskService {
         : Promise.resolve(0),
     ]);
 
-    if (!colunaExists) throw new Error("A coluna informada não existe.");
-    if (!sprintExists) throw new Error("A sprint informada não existe.");
+    if (!colunaExists) {
+      throw new AppError("A coluna informada não existe.", 404); // Not Found
+    }
+
+    if (!sprintExists) {
+      throw new AppError("A sprint informada não existe.", 404); // Not Found
+    }
+
     if (
       validUsuarioIds.length > 0 &&
       countUsuarios !== validUsuarioIds.length
     ) {
-      throw new Error("Um ou mais usuários informados não existem.");
+      throw new AppError("Um ou mais usuários informados não existem.", 404); // Not Found
     }
 
     // 5. Persistence & Nested Write com connect explícito no Prisma
