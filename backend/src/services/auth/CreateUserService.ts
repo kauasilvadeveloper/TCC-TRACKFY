@@ -1,5 +1,6 @@
 import { hash } from "bcryptjs";
 import { prisma } from "../../prisma";
+import { AppError } from "../../errors/AppError";
 
 interface CreateUserDTO {
   creatorRole?: string;
@@ -14,22 +15,30 @@ export class CreateUserService {
     // 1. Controle de Acesso (RBAC)
     const allowedRoles = ["coordenador", "professor"];
     if (!creatorRole || !allowedRoles.includes(creatorRole.toLowerCase())) {
-      throw new Error(
+      throw new AppError(
         "Acesso negado: Permissão insuficiente para cadastrar usuários.",
+        403,
       );
     }
 
-    // 2. Validação de Email e Domínio Acadêmico
     if (!email) {
-      throw new Error("Email incorreto.");
+      throw new AppError("O e-mail é obrigatório para prosseguir.", 400);
     }
 
-    const validDomains = ["@aluno.senai.br", "@portalsesisp.org.br"];
+    const validDomains = [
+      "@aluno.senai.br",
+      "@docente.senai.br",
+      "@portalsesisp.org.br",
+    ];
     const hasValidDomain = validDomains.some((domain) =>
       email.endsWith(domain),
     );
+
     if (!hasValidDomain) {
-      throw new Error("Domínio de e-mail não permitido para cadastro.");
+      throw new AppError(
+        `Acesso permitido apenas para e-mails do domínio acadêmico.`,
+        400,
+      );
     }
 
     // 3. Verificação de Duplicidade
@@ -38,7 +47,10 @@ export class CreateUserService {
     });
 
     if (userAlreadyExists) {
-      throw new Error("Usuário já cadastrado.");
+      throw new AppError(
+        "O e-mail informado já está cadastrado no sistema.",
+        409,
+      );
     }
 
     // 4. Hash da Senha e Persistência

@@ -1,6 +1,7 @@
 import { compare } from "bcryptjs";
 import { sign, SignOptions } from "jsonwebtoken";
 import { prisma } from "../../prisma";
+import { AppError } from "../../errors/AppError";
 
 export interface AuthRequest {
   email: string;
@@ -21,13 +22,6 @@ export interface UserPayload {
   id: string | number;
   email: string;
   role: string;
-}
-
-export class UnauthorizedException extends Error {
-  constructor(message: string = "User/password incorrect") {
-    super(message);
-    this.name = "UnauthorizedException";
-  }
 }
 
 export function generateAccessToken(user: UserPayload, secret: string): string {
@@ -51,18 +45,19 @@ export class AuthUserService {
     });
 
     if (!user) {
-      throw new UnauthorizedException();
+      throw new AppError("Credenciais inválidas.", 401);
     }
 
     const passwordMatch = await compare(password, user.senha);
 
     if (!passwordMatch) {
-      throw new UnauthorizedException();
+      throw new AppError("Credenciais inválidas.", 401);
     }
 
     const secret = process.env.JWT_SECRET;
     if (!secret) {
-      throw new Error("FATAL: JWT_SECRET environment variable is not defined.");
+      console.error("FATAL: JWT_SECRET environment variable is not defined.");
+      throw new AppError("Erro interno no servidor.", 500);
     }
 
     const token = generateAccessToken(
