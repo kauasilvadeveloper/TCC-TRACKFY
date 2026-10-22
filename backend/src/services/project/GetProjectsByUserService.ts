@@ -1,19 +1,24 @@
+import { AppError } from "../../errors/AppError";
 import { prisma } from "../../prisma";
 
 export class GetProjectsByUserService {
   async execute(userId: number) {
-    if (!userId || isNaN(userId) || userId <= 0) {
-      throw new Error("Identificador do usuário inválido ou não autenticado.");
+    const parsedUserId = Number(userId);
+    if (!userId || Number.isNaN(parsedUserId) || parsedUserId <= 0) {
+      throw new AppError(
+        "Identificador do usuário inválido ou não informado.",
+        400, // Bad Request
+      );
     }
 
-    // 1. Verificação de existência do usuário
+    // 2. Verificação de existência do usuário no banco de dados
     const userExists = await prisma.usuario.findUnique({
-      where: { id: userId },
-      select: { id: true },
+      where: { id: parsedUserId },
+      select: { id: true }, // Projeção enxuta para otimização de I/O
     });
 
     if (!userExists) {
-      throw new Error("Usuário não encontrado.");
+      throw new AppError("Usuário não encontrado.", 404); // Not Found
     }
 
     // 2. Busca os projetos onde o usuário possui vínculo na tabela pivô projeto_usuario

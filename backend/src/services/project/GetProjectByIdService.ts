@@ -1,10 +1,13 @@
+import { AppError } from "../../errors/AppError";
 import { prisma } from "../../prisma";
 
 export class GetProjectByIdService {
   async execute(projectId: number) {
-    if (!projectId || isNaN(projectId) || projectId <= 0) {
-      throw new Error(
+    const parsedProjectId = Number(projectId);
+    if (!projectId || Number.isNaN(parsedProjectId) || parsedProjectId <= 0) {
+      throw new AppError(
         "O ID do projeto é obrigatório e deve ser um número inteiro válido.",
+        400, // Bad Request
       );
     }
 
@@ -61,7 +64,7 @@ export class GetProjectByIdService {
     });
 
     if (!project) {
-      throw new Error("Projeto não encontrado.");
+      throw new AppError("Projeto não encontrado.", 404); // Not Found
     }
 
     // Mapeamento para desacoplar a estrutura interna da pivô e entregar um contrato JSON limpo

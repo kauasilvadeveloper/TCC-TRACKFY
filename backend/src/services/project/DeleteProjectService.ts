@@ -1,3 +1,4 @@
+import { AppError } from "../../errors/AppError";
 import { prisma } from "../../prisma";
 
 interface DeleteProjectRequest {
@@ -11,7 +12,10 @@ export class DeleteProjectService {
 
     const allowedRoles = ["aluno", "professor"];
     if (!creatorRole || !allowedRoles.includes(creatorRole.toLowerCase())) {
-      throw new Error("Acesso negado: Permissão para deletar projetos.");
+      throw new AppError(
+        "Acesso negado: Permissão insuficiente para deletar projetos.",
+        403, // Forbidden
+      );
     }
 
     const project = await prisma.projeto.delete({

@@ -1,5 +1,6 @@
 import { Octokit } from "@octokit/rest";
 import { prisma } from "../../prisma";
+import { AppError } from "../../errors/AppError";
 
 export interface GetGithubMetricsDTO {
   projectId: number;
@@ -83,23 +84,34 @@ export class GetGithubMetricsService {
     } catch (error: unknown) {
       if (typeof error === "object" && error !== null && "status" in error) {
         const githubError = error as { status: number; message?: string };
+
         if (githubError.status === 404) {
-          throw new Error(
+          throw new AppError(
             "Repositório do GitHub não encontrado ou sem permissão de acesso.",
+            404, // Not Found
           );
         }
+
         if (githubError.status === 401) {
-          throw new Error(
+          throw new AppError(
             "Token de autenticação do GitHub inválido ou expirado.",
+            401, // Unauthorized
           );
         }
       }
 
-      if (error instanceof Error) {
-        throw new Error(error.message);
+      // Preserva exceções de domínio já lançadas internamente
+      if (error instanceof AppError) {
+        throw error;
       }
 
-      throw new Error("Falha de comunicação com a API do GitHub.");
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Falha de comunicação com a API do GitHub.";
+
+      // Retorna 502 Bad Gateway para indisponibilidades ou erros não mapeados da API do GitHub
+      throw new AppError(errorMessage, 502);
     }
   }
 

@@ -1,5 +1,6 @@
 import { Octokit } from "@octokit/rest";
 import { prisma } from "../../prisma";
+import { AppError } from "../../errors/AppError";
 
 export interface LinkGithubRepositoryDTO {
   projectId: number;
@@ -15,15 +16,18 @@ export class LinkGithubRepositoryService {
     repo,
     githubToken,
   }: LinkGithubRepositoryDTO) {
-    if (!projectId || isNaN(projectId) || projectId <= 0) {
-      throw new Error(
+    const parsedProjectId = Number(projectId);
+    if (!projectId || Number.isNaN(parsedProjectId) || parsedProjectId <= 0) {
+      throw new AppError(
         "O ID do projeto é obrigatório e deve ser um número inteiro válido.",
+        400, // Bad Request
       );
     }
 
-    if (!owner || !repo) {
-      throw new Error(
+    if (!owner?.trim() || !repo?.trim()) {
+      throw new AppError(
         "Proprietário (owner) e nome do repositório (repo) são obrigatórios.",
+        400, // Bad Request
       );
     }
 
@@ -59,7 +63,7 @@ export class LinkGithubRepositoryService {
     });
 
     if (!projectExists) {
-      throw new Error("Projeto não encontrado.");
+      throw new AppError("Projeto não encontrado.", 404); // Not Found
     }
 
     // 4. Salva o caminho padronizado "owner/repo" no banco de dados

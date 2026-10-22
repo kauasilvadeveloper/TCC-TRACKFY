@@ -1,3 +1,4 @@
+import { AppError } from "../../errors/AppError";
 import { prisma } from "../../prisma";
 
 interface UpdateProjectRequest {
@@ -15,8 +16,12 @@ export class UpdateProjectService {
     const { projectId, title, description, term, tokenGithub } = data;
 
     const allowedRoles = ["aluno", "professor"];
+
     if (!creatorRole || !allowedRoles.includes(creatorRole.toLowerCase())) {
-      throw new Error("Acesso negado: Permissão para alterar projetos.");
+      throw new AppError(
+        "Acesso negado: Permissão insuficiente para alterar projetos.",
+        403, // Forbidden
+      );
     }
 
     const project = await prisma.projeto.update({

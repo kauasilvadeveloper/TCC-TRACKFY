@@ -1,3 +1,4 @@
+import { AppError } from "../../errors/AppError";
 import { prisma } from "../../prisma";
 
 export interface AddProjectMemberDTO {
@@ -8,16 +9,32 @@ export interface AddProjectMemberDTO {
 
 export class AddProjectMemberService {
   async execute({ projectId, targetUserId, funcaoId }: AddProjectMemberDTO) {
-    if (!projectId || isNaN(projectId) || projectId <= 0) {
-      throw new Error("O ID do projeto é obrigatório e deve ser numérico.");
+    const parsedProjectId = Number(projectId);
+    if (!projectId || Number.isNaN(parsedProjectId) || parsedProjectId <= 0) {
+      throw new AppError(
+        "O ID do projeto é obrigatório e deve ser um número válido.",
+        400,
+      ); // 400 Bad Request
     }
 
-    if (!targetUserId || isNaN(targetUserId) || targetUserId <= 0) {
-      throw new Error("O ID do usuário a ser adicionado é obrigatório.");
+    const parsedTargetUserId = Number(targetUserId);
+    if (
+      !targetUserId ||
+      Number.isNaN(parsedTargetUserId) ||
+      parsedTargetUserId <= 0
+    ) {
+      throw new AppError(
+        "O ID do usuário a ser adicionado é obrigatório e deve ser um número válido.",
+        400,
+      ); // 400 Bad Request
     }
 
-    if (!funcaoId || isNaN(funcaoId) || funcaoId <= 0) {
-      throw new Error("O ID da função no projeto é obrigatório.");
+    const parsedFuncaoId = Number(funcaoId);
+    if (!funcaoId || Number.isNaN(parsedFuncaoId) || parsedFuncaoId <= 0) {
+      throw new AppError(
+        "O ID da função no projeto é obrigatório e deve ser um número válido.",
+        400,
+      ); // 400 Bad Request
     }
 
     // 1. Validação concorrente de existência das entidades (Parallel I/O)
@@ -36,10 +53,17 @@ export class AddProjectMemberService {
       }),
     ]);
 
-    if (!projectExists) throw new Error("Projeto não encontrado.");
-    if (!userExists) throw new Error("Usuário não encontrado.");
-    if (!functionExists)
-      throw new Error("A função informada não existe no sistema.");
+    if (!projectExists) {
+      throw new AppError("Projeto não encontrado.", 404); // 404 Not Found
+    }
+
+    if (!userExists) {
+      throw new AppError("Usuário não encontrado.", 404); // 404 Not Found
+    }
+
+    if (!functionExists) {
+      throw new AppError("A função informada não existe no sistema.", 404); // 404 Not Found
+    }
 
     // 2. Checagem de existência do membro com a mesma função via chave primária composta
     const existingRelation = await prisma.projetoUsuario.findUnique({
@@ -53,8 +77,9 @@ export class AddProjectMemberService {
     });
 
     if (existingRelation) {
-      throw new Error(
+      throw new AppError(
         "O aluno já está cadastrado neste projeto com esta mesma função.",
+        409, // 409 Conflict
       );
     }
 
