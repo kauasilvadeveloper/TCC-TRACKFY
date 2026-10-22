@@ -1,3 +1,4 @@
+import { AppError } from "../../errors/AppError";
 import { prisma } from "../../prisma";
 
 export interface CreateCommentDTO {
@@ -8,18 +9,21 @@ export interface CreateCommentDTO {
 
 export class CreateCommentService {
   async execute({ taskId, userId, conteudo }: CreateCommentDTO) {
-    if (!taskId || isNaN(taskId) || taskId <= 0) {
-      throw new Error(
+    const parsedTaskId = Number(taskId);
+    if (!taskId || Number.isNaN(parsedTaskId) || parsedTaskId <= 0) {
+      throw new AppError(
         "O ID da tarefa é obrigatório e deve ser um número inteiro válido.",
+        400, // Bad Request
       );
     }
 
-    if (!userId || isNaN(userId) || userId <= 0) {
-      throw new Error("Identificador do usuário não autenticado ou inválido.");
+    const parsedUserId = Number(userId);
+    if (!userId || Number.isNaN(parsedUserId) || parsedUserId <= 0) {
+      throw new AppError("Identificador do usuário inválido.", 400); // Bad Request
     }
 
     if (!conteudo || !conteudo.trim()) {
-      throw new Error("O conteúdo do comentário não pode estar vazio.");
+      throw new AppError("O conteúdo do comentário não pode estar vazio.", 400); // Bad Request
     }
 
     const trimmedConteudo = conteudo.trim();
@@ -37,11 +41,11 @@ export class CreateCommentService {
     ]);
 
     if (!taskExists) {
-      throw new Error("Tarefa não encontrada.");
+      throw new AppError("Tarefa não encontrada.", 404); // Not Found
     }
 
     if (!userExists) {
-      throw new Error("Usuário não encontrado.");
+      throw new AppError("Usuário não encontrado.", 404); // Not Found
     }
 
     // 2. Criação do comentário associado à tarefa e ao autor

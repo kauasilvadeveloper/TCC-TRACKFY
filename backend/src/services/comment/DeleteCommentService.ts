@@ -1,3 +1,4 @@
+import { AppError } from "../../errors/AppError";
 import { prisma } from "../../prisma";
 
 export interface DeleteCommentDTO {
@@ -7,17 +8,19 @@ export interface DeleteCommentDTO {
 
 export class DeleteCommentService {
   async execute({ commentId, userId }: DeleteCommentDTO) {
-    if (!commentId || isNaN(commentId) || commentId <= 0) {
-      throw new Error(
+    const parsedCommentId = Number(commentId);
+    if (!commentId || Number.isNaN(parsedCommentId) || parsedCommentId <= 0) {
+      throw new AppError(
         "O ID do comentário é obrigatório e deve ser um número inteiro válido.",
+        400, // Bad Request
       );
     }
 
-    if (!userId || isNaN(userId) || userId <= 0) {
-      throw new Error("Identificador do usuário não autenticado ou inválido.");
+    const parsedUserId = Number(userId);
+    if (!userId || Number.isNaN(parsedUserId) || parsedUserId <= 0) {
+      throw new AppError("Identificador do usuário inválido.", 400); // Bad Request
     }
 
-    // 1. Busca o comentário para validar existência e verificar propriedade (Ownership)
     const comment = await prisma.comentario.findUnique({
       where: { id: commentId },
       select: {
@@ -27,17 +30,16 @@ export class DeleteCommentService {
     });
 
     if (!comment) {
-      throw new Error("Comentário não encontrado.");
+      throw new AppError("Comentário não encontrado.", 404); // Not Found
     }
 
-    // 2. Regra de Autorização: Impede que um usuário remova o comentário de outro
-    if (comment.fkUsuario !== userId) {
-      throw new Error(
-        "Ação não autorizada. Apenas o autor do comentário pode removê-lo.",
+    if (comment.fkUsuario !== parsedUserId) {
+      throw new AppError(
+        "Acesso negado: Apenas o autor do comentário tem permissão para removê-lo.",
+        403, // Forbidden
       );
     }
 
-    // 3. Exclusão física do registro no banco
     await prisma.comentario.delete({
       where: { id: commentId },
     });
