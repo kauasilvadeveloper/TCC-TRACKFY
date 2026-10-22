@@ -1,22 +1,25 @@
+import { AppError } from "../../errors/AppError";
 import { prisma } from "../../prisma";
 
 export class GetKanbanByProjectService {
   async execute(projectId: number) {
-    if (!projectId || isNaN(projectId) || projectId <= 0) {
-      throw new Error("O ID do projeto deve ser um número inteiro válido.");
+    const parsedProjectId = Number(projectId);
+    if (!projectId || Number.isNaN(parsedProjectId) || parsedProjectId <= 0) {
+      throw new AppError(
+        "O ID do projeto deve ser um número inteiro válido.",
+        400, // Bad Request
+      );
     }
 
-    // 1. Verificação de existência do Projeto
     const projectExists = await prisma.projeto.findUnique({
-      where: { id: projectId },
-      select: { id: true },
+      where: { id: parsedProjectId },
+      select: { id: true }, // Projeção enxuta para otimização de I/O
     });
 
     if (!projectExists) {
-      throw new Error("Projeto não encontrado.");
+      throw new AppError("Projeto não encontrado.", 404); // Not Found
     }
 
-    // 2. Busca o Kanban vinculado ao Projeto com Colunas e Tarefas
     const kanban = await prisma.kanban.findFirst({
       where: { fkProjeto: projectId },
       select: {
@@ -65,9 +68,8 @@ export class GetKanbanByProjectService {
     });
 
     if (!kanban) {
-      throw new Error("Nenhum Kanban encontrado para este projeto.");
+      throw new AppError("Nenhum Kanban encontrado para este projeto.", 404); // Not Found
     }
-
     return kanban;
   }
 }

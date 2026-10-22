@@ -1,3 +1,4 @@
+import { AppError } from "../../errors/AppError";
 import { prisma } from "../../prisma";
 
 interface CreateKanbanRequest {
@@ -15,20 +16,21 @@ export class CreateKanbanService {
     fkProjeto,
   }: CreateKanbanRequest) {
     const allowedRoles = ["aluno", "professor"];
+
     if (!creatorRole || !allowedRoles.includes(creatorRole.toLowerCase())) {
-      throw new Error(
+      throw new AppError(
         "Acesso negado: Permissão insuficiente para criar quadros kanban.",
+        403, // Forbidden
       );
     }
 
-    const projeto = await prisma.projeto.findUnique({
-      where: {
-        id: fkProjeto,
-      },
+    const projetoExists = await prisma.projeto.findUnique({
+      where: { id: fkProjeto },
+      select: { id: true },
     });
 
-    if (!projeto) {
-      throw new Error("Projeto não encontrado");
+    if (!projetoExists) {
+      throw new AppError("Projeto não encontrado.", 404); // Not Found
     }
 
     const kanban = await prisma.kanban.create({

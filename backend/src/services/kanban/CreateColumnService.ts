@@ -1,3 +1,4 @@
+import { AppError } from "../../errors/AppError";
 import { prisma } from "../../prisma";
 
 interface CreateColumnDTO {
@@ -14,27 +15,27 @@ export class CreateColumnService {
     ordem,
     fkKanban,
   }: CreateColumnDTO) {
-    if (!fkKanban || isNaN(fkKanban)) {
-      throw new Error(
-        "O ID do Kanban (fkKanban) é obrigatório e deve ser numérico.",
+    const parsedKanbanId = Number(fkKanban);
+    if (!fkKanban || Number.isNaN(parsedKanbanId) || parsedKanbanId <= 0) {
+      throw new AppError(
+        "O ID do Kanban (fkKanban) é obrigatório e deve ser um número inteiro válido.",
+        400, // Bad Request
       );
     }
 
     if (!tituloColuna || !tituloColuna.trim()) {
-      throw new Error("O título da coluna é obrigatório.");
+      throw new AppError("O título da coluna é obrigatório.", 400); // Bad Request
     }
 
-    // 1. Integridade Referencial: Verifica se o Kanban pai existe
     const kanbanExists = await prisma.kanban.findUnique({
       where: { id: fkKanban },
       select: { id: true },
     });
 
     if (!kanbanExists) {
-      throw new Error("O Kanban especificado não existe.");
+      throw new AppError("O Kanban especificado não existe.", 404); // Not Found
     }
 
-    // 2. Cálculo dinâmico da ordem se não for informada
     let columnOrder = ordem;
     if (!columnOrder) {
       const totalColumns = await prisma.coluna.count({
@@ -43,7 +44,6 @@ export class CreateColumnService {
       columnOrder = String(totalColumns + 1);
     }
 
-    // 3. Persistência da Coluna
     const coluna = await prisma.coluna.create({
       data: {
         tituloColuna: tituloColuna.trim(),
