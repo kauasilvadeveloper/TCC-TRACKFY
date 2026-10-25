@@ -1,12 +1,14 @@
 // src/components/dashboard/DashboardProjects/DashboardProjects.tsx
 "use client";
 
-import { mockProjects } from "@/src/mocks/dashboard.mock";
+import { useDashboard } from "@/src/context/DashboardContext";
 import { ProjectCard } from "./ProjectCard";
 import { NewProjectCard } from "./NewProjectCard";
 import styles from "./DashboardProjects.module.scss";
 
 export function DashboardProjects() {
+  const { projects, isLoading, error, refetchProjects } = useDashboard();
+
   return (
     <section id="projetos" className={styles.section} aria-labelledby="projects-title">
       <div className={styles.container}>
@@ -33,12 +35,63 @@ export function DashboardProjects() {
           </button>
         </div>
 
-        <div className={styles.projectsGrid}>
-          {mockProjects.map((project) => (
-            <ProjectCard key={project.id} project={project} />
-          ))}
-          <NewProjectCard />
-        </div>
+        {/* Error State */}
+        {error && (
+          <div className={styles.errorContainer} role="alert">
+            <span className={styles.errorMessage}>{error}</span>
+            <button
+              type="button"
+              className={styles.retryBtn}
+              onClick={() => refetchProjects()}
+            >
+              Tentar novamente
+            </button>
+          </div>
+        )}
+
+        {/* Loading Skeletons */}
+        {isLoading && (
+          <div
+            className={styles.projectsGrid}
+            role="status"
+            aria-busy="true"
+            aria-label="Carregando projetos"
+          >
+            {[1, 2, 3, 4].map((item) => (
+              <div key={item} className={styles.skeletonCard}>
+                <div className={styles.skeletonBar} />
+                <div className={styles.skeletonLine} />
+                <div className={styles.skeletonTrack} />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Projects Grid or Empty State */}
+        {!isLoading && !error && (
+          <div className={styles.projectsGrid}>
+            {projects.length > 0 ? (
+              <>
+                {projects.map((project) => (
+                  <ProjectCard key={project.id} project={project} />
+                ))}
+                <NewProjectCard />
+              </>
+            ) : (
+              <div className={styles.emptyStateContainer}>
+                <span className={styles.emptyIcon} aria-hidden="true">
+                  📁
+                </span>
+                <h3 className={styles.emptyTitle}>Nenhum projeto encontrado</h3>
+                <p className={styles.emptyDesc}>
+                  Você ainda não possui projetos vinculados. Comece criando o seu
+                  primeiro projeto para organizar o trabalho da sua equipe.
+                </p>
+                <NewProjectCard />
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </section>
   );

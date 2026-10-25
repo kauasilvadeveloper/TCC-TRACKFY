@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import { useAuth } from "@/src/context/AuthContext";
+import { DashboardProvider } from "@/src/context/DashboardContext";
 import { DashboardNavbar } from "@/src/components/dashboard/DashboardNavbar/DashboardNavbar";
 import { DashboardHero } from "@/src/components/dashboard/DashboardHero/DashboardHero";
 import { DashboardShortcuts } from "@/src/components/dashboard/DashboardShortcuts/DashboardShortcuts";
@@ -39,17 +40,19 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className={styles.dashboardPage}>
-      <DashboardNavbar />
-      <main className={styles.mainContent}>
-        <DashboardHero />
-        <DashboardShortcuts />
-        <DashboardProjects />
-        <DashboardWorkflow />
-        <DashboardPerformance />
-        <DashboardMembers />
-        <DashboardCtaBanner />
-      </main>
-    </div>
+    <DashboardProvider>
+      <div className={styles.dashboardPage}>
+        <DashboardNavbar />
+        <main className={styles.mainContent}>
+          <DashboardHero />
+          <DashboardShortcuts />
+          <DashboardProjects />
+          <DashboardWorkflow />
+          <DashboardPerformance />
+          <DashboardMembers />
+          <DashboardCtaBanner />
+        </main>
+      </div>
+    </DashboardProvider>
   );
 }

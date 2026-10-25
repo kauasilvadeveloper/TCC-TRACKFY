@@ -1,10 +1,12 @@
 // src/components/dashboard/DashboardHero/DashboardHero.tsx
 "use client";
 
-import { mockHeroStats, mockChartPoints } from "@/src/mocks/dashboard.mock";
+import { mockChartPoints } from "@/src/mocks/dashboard.mock";
+import { useDashboard } from "@/src/context/DashboardContext";
 import styles from "./DashboardHero.module.scss";
 
 export function DashboardHero() {
+  const { heroStats } = useDashboard();
   const getIcon = (iconName: string) => {
     switch (iconName) {
       case "folder":
@@ -58,7 +60,7 @@ export function DashboardHero() {
           </div>
 
           <div className={styles.statsRow}>
-            {mockHeroStats.map((stat, index) => (
+            {heroStats.map((stat, index) => (
               <div key={index} className={styles.statItem}>
                 <span className={styles.statIcon} aria-hidden="true">
                   {getIcon(stat.icone)}
