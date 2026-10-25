@@ -1,0 +1,5 @@
+- Package Manager: Bun (use `bun add`, `bun run dev`, etc. NUNCA use npm/yarn).
+- Framework: Next.js (App Router), React, TypeScript em modo estrito.
+- Estilização: SCSS / SCSS Modules. Utilize sempre os mixins e variáveis de `@/styles`. NÃO use inline styles nem Tailwind.
+- Componentização: Crie componentes isolados e reutilizáveis em `src/components/`. Separe a lógica e os tipos em arquivos auxiliares se o componente for complexo.
+- Acessibilidade & Performance: Priorize tags semânticas HTML5 e imagens otimizadas com `next/image`.

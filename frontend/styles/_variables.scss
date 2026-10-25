@@ -1,0 +1,51 @@
+// src/styles/_variables.scss
+
+// ==========================================================================
+// 1. PRIMITIVE TOKENS (Escala Absoluta da Marca)
+// ==========================================================================
+$color-navy-900: #060918; // Sidebar Dark
+$color-navy-800: #080c20; // Background Dark (Navy Profundo)
+$color-navy-700: #0d1235; // Cards Dark
+$color-navy-600: #0f1840; // Inputs Dark
+$color-navy-500: #1a2050; // Bordas Dark
+
+$color-blue-600: #2545d8; // Royal Blue (Primary)
+$color-blue-400: #4f80f0; // Accent Blue (Logo details)
+
+$color-text-100: #e8eeff; // High contrast text
+$color-text-300: #6b7db3; // Medium contrast / secondary text
+$color-text-500: #4a5a8a; // Muted text / placeholders
+
+// ==========================================================================
+// 2. SEMANTIC TOKENS (Contexto de Uso)
+// ==========================================================================
+$bg-main: $color-navy-800;
+$bg-sidebar: $color-navy-900;
+$border-sidebar: $color-navy-500;
+$bg-card: $color-navy-700;
+$bg-input: $color-navy-600;
+
+$brand-primary: $color-blue-600;
+$brand-accent: $color-blue-400;
+
+$text-primary: $color-text-100;
+$text-secondary: $color-text-300;
+$text-muted: $color-text-500;
+
+// ==========================================================================
+// 3. CSS CUSTOM PROPERTIES (Runtime Access para Next.js / SCSS Modules)
+// ==========================================================================
+:root {
+    --bg-main: #{$bg-main};
+    --bg-sidebar: #{$bg-sidebar};
+    --border-sidebar: #{$border-sidebar};
+    --bg-card: #{$bg-card};
+    --bg-input: #{$bg-input};
+
+    --brand-primary: #{$brand-primary};
+    --brand-accent: #{$brand-accent};
+
+    --text-primary: #{$text-primary};
+    --text-secondary: #{$text-secondary};
+    --text-muted: #{$text-muted};
+}
