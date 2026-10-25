@@ -67,8 +67,9 @@ src/
   - *Relatórios*
 - **Ações da Direita:**
   - Campo de busca global (*"Buscar projeto..."*) com ícone e atalho de teclado visual.
+  - **Botão Alternador de Tema (Dark/Light):** Reutilização direta do hook `useTheme()` (`theme`, `toggleTheme`), permitindo alternância instantânea entre modo escuro e claro com feedback visual de ícone (☀️ / 🌙).
   - Botão de notificações com badge de avisos.
-  - Avatar do usuário autenticado com status online e menu de perfil/logout integrado ao `useAuth`.
+  - **Avatar & Perfil do Usuário:** Integrado a `useAuth()`. Exibe nome/foto do usuário autenticado e menu dropdown com dados da conta e botão de encerramento de sessão (`logout()`).
 
 ---
 
@@ -176,7 +177,7 @@ src/
 
 | Seção / Recurso | Rota do Backend Express | Método | Estratégia de Consumo |
 | :--- | :--- | :--- | :--- |
-| **Autenticação do Usuário** | N/A (Consumo via Contexto) | Client | `useAuth()` fornece os dados do usuário autenticado e token no cookie |
+| **Proteção de Rota & Autenticação** | N/A (Guarda de Rota Client-side) | Client | `useAuth()` valida sessão via cookie `trackfy_token`; se não autenticado, redireciona para `/` |
 | **Projetos do Usuário** | `/project` | `GET` | Autenticado via header `Bearer <token>`. Retorna lista de projetos associados ao usuário |
 | **Criação de Projeto (Futuro)** | `/project` | `POST` | Payload: `{ tituloProjeto, descricao, prazo }`. Nesta fase: botão estático |
 | **Kanban / Tarefas do Projeto** | `/kanban/:projectId` | `GET` | Mock estruturado inicial com modelo alinhado ao Prisma schema |
@@ -184,7 +185,29 @@ src/
 | **Membros do Projeto** | `/class/:id/users` ou `/project/:id` | `GET` | Mock estruturado com fotos, nomes e funções |
 | **Performance e Métricas** | Endpoint Analítico Futuro | `GET` | **100% Mockado** conforme solicitado |
 
-### Estrutura de Mock (`src/mocks/dashboard.mock.ts`)
+---
+
+### 3.1 Fluxo de Proteção e Autenticação (`useAuth`)
+- **Guarda de Acesso:** A página `DashboardPage` (`/dashboard`) implementa verificação ativa de autenticação com o hook `useAuth()`.
+- **Redirecionamento Automático:** Caso `isAuthenticated` seja falso ou o token no cookie `trackfy_token` não esteja presente, o usuário é redirecionado imediatamente para a tela de login (`/`) via `router.push('/')`.
+- **Estado de Carregamento (Loading State):** Enquanto o estado de autenticação estiver sendo verificado, a página exibe um indicador sutil de carregamento estilizado, impedindo *flash* de conteúdo desprotegido.
+- **Identificação do Usuário:** O nome e email providos pelo `user` (`User` de `src/types/auth.ts`) são consumidos para preencher o perfil do usuário na `DashboardNavbar`.
+- **Ação de Logout:** O menu do perfil oferece a ação de encerramento de sessão chamando `logout('/')`.
+
+---
+
+### 3.2 Reutilização do Sistema de Temas (Dark / Light Mode)
+- **Reutilização Integral:** Não criar nenhum novo contexto nem alterar a lógica de tema. Reutilizar diretamente o hook `useTheme()` disponibilizado por `ThemeContext` (`src/context/ThemeContext.tsx`).
+- **Mecanismo Existente:**
+  - `ThemeContext` gerencia o atributo `data-theme="dark" | "light"` no elemento raiz `<html>`.
+  - Persistência automática em `localStorage` sob a chave `trackfy_theme`.
+- **Aderência aos Tokens de Estilo:**
+  - Todos os componentes utilizam variáveis CSS declaradas em `globals.scss` e `_variables.scss` (`--bg-primary`, `--bg-surface`, `--bg-input`, `--border-color`, `--text-primary`, `--text-secondary`, `--brand-primary`, etc.).
+  - Isso assegura que a tela inteira responda dinamicamente e sem esforço à troca de tema acionada pelo botão da `DashboardNavbar`.
+
+---
+
+### 3.3 Estrutura de Mock (`src/mocks/dashboard.mock.ts`)
 Para garantir tipagem TypeScript estrita e fácil substituição futura por chamadas à API, os dados estáticos serão estruturados em contratos de tipos equivalentes aos modelos do banco (`Projeto`, `Tarefa`, `Usuario`, etc.).
 
 ---
@@ -211,7 +234,9 @@ Conforme definido em `.antigravityrules`:
 ## 5. Critérios de Aceite para Validação
 
 1. **Aprovação Formal da Spec:** Nenhuma codificação em `.tsx` ou `.scss` será iniciada antes da aprovação explícita desta especificação.
-2. **Fidelidade Visual:** A tela deve reproduzir a hierarquia, contraste, paleta de cores navy/azul escuro, estados hover e disposição dos elementos do Figma.
-3. **Ausência da Seção de Configurações:** A seção foi suprimida conforme instrução do usuário.
-4. **Sem Alterações no Backend:** O backend Express permanece 100% intacto.
-5. **Git Versioning:** As alterações desta etapa são commitadas diretamente na branch `feat/dashboard`.
+2. **Proteção de Rota Ativa:** Usuários não autenticados são redirecionados automaticamente para `/`.
+3. **Reutilização de Dark/Light Mode:** O alternador de tema utiliza o `useTheme` existente e alterna as cores da página instantaneamente.
+4. **Fidelidade Visual:** A tela deve reproduzir a hierarquia, contraste, paleta de cores navy/azul escuro, estados hover e disposição dos elementos do Figma.
+5. **Ausência da Seção de Configurações:** A seção foi suprimida conforme instrução do usuário.
+6. **Sem Alterações no Backend:** O backend Express permanece 100% intacto.
+7. **Git Versioning:** As alterações desta etapa são commitadas diretamente na branch `feat/dashboard`.
