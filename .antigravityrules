@@ -1,5 +1,14 @@
-- Package Manager: Bun (use `bun add`, `bun run dev`, etc. NUNCA use npm/yarn).
-- Framework: Next.js (App Router), React, TypeScript em modo estrito.
-- Estilização: SCSS / SCSS Modules. Utilize sempre os mixins e variáveis de `@/styles`. NÃO use inline styles nem Tailwind.
-- Componentização: Crie componentes isolados e reutilizáveis em `src/components/`. Separe a lógica e os tipos em arquivos auxiliares se o componente for complexo.
-- Acessibilidade & Performance: Priorize tags semânticas HTML5 e imagens otimizadas com `next/image`.
+# Antigravity Agent Directives
+
+## 1. Regras de Stack & Tooling
+- Package Manager: Bun (`bun add`, `bun run dev`). NUNCA utilize `npm` ou `yarn`.
+- Framework: Next.js (App Router), React, TypeScript em Strict Mode.
+- Estilização: SCSS Modules. Importe estritamente os design tokens de `@src/styles/_variables.scss`.
+
+## 2. Fluxo de Trabalho Interativo (Spec-First)
+- ETAPA 1 (Perguntas): Ao receber um layout/frame do Figma, NÃO gere código TSX/SCSS imediatamente. Faça até 3 perguntas técnicas sobre:
+  a) Endpoints do backend (Express), parâmetros e formato do JSON.
+  b) Tratamento de estados de UI: Skeleton (Loading), Error e Empty State.
+  c) Ações de usuário e rotas de navegação.
+- ETAPA 2 (Geração da Spec): Após o meu retorno, crie o documento Markdown em `docs/specs/[nome-da-pagina].spec.md`.
+- ETAPA 3 (Implementação): Aguarde a aprovação explicita da Spec para criar ou modificar componentes no diretório `src/`.
