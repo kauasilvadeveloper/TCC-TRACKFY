@@ -4,7 +4,6 @@
 import { useState, FormEvent } from "react";
 import { useAuth } from "@/src/context/AuthContext";
 import styles from "./LoginForm.module.scss";
-import axios from "axios";
 
 export function LoginForm() {
   const { login } = useAuth();

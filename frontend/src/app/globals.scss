@@ -1,23 +1,67 @@
 :root[data-theme="dark"] {
-  --bg-primary: #040714;
-  --bg-surface: #0b1128;
-  --bg-input: #121a38;
-  --border-color: #1e294d;
-  --text-primary: #ffffff;
-  --text-secondary: #8f9bba;
+  --bg-primary: #050816;
+  --bg-surface: #0a0f26;
+  --bg-card: #0d1433;
+  --bg-card-hover: #121c45;
+  --bg-card-subtle: rgba(14, 22, 53, 0.6);
+  --bg-input: #111a3d;
+  --bg-muted: rgba(255, 255, 255, 0.05);
+  --bg-glass: rgba(10, 15, 38, 0.85);
+
+  --border-color: #1a2550;
+  --border-subtle: #24336c;
+  --border-focus: #3b82f6;
+
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
   --brand-primary: #3b82f6;
   --brand-hover: #2563eb;
+  --brand-accent: #60a5fa;
+
+  --accent-blue: #3b82f6;
+  --accent-purple: #8b5cf6;
+  --accent-green: #10b981;
+  --accent-orange: #f59e0b;
+  --accent-red: #ef4444;
+
+  --shadow-card: 0 8px 30px rgba(0, 0, 0, 0.45);
+  --shadow-hover: 0 16px 40px rgba(13, 20, 51, 0.6);
+  --glow-primary: 0 0 25px rgba(59, 130, 246, 0.25);
 }
 
 :root[data-theme="light"] {
-  --bg-primary: #f4f6f8;
+  --bg-primary: #f8fafc;
   --bg-surface: #ffffff;
-  --bg-input: #f0f3f6;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5f9;
+  --bg-card-subtle: rgba(241, 245, 249, 0.7);
+  --bg-input: #f1f5f9;
+  --bg-muted: rgba(0, 0, 0, 0.04);
+  --bg-glass: rgba(255, 255, 255, 0.9);
+
   --border-color: #e2e8f0;
+  --border-subtle: #cbd5e1;
+  --border-focus: #2563eb;
+
   --text-primary: #0f172a;
-  --text-secondary: #64748b;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+
   --brand-primary: #2563eb;
   --brand-hover: #1d4ed8;
+  --brand-accent: #3b82f6;
+
+  --accent-blue: #2563eb;
+  --accent-purple: #7c3aed;
+  --accent-green: #059669;
+  --accent-orange: #d97706;
+  --accent-red: #dc2626;
+
+  --shadow-card: 0 8px 25px rgba(0, 0, 0, 0.06);
+  --shadow-hover: 0 14px 35px rgba(0, 0, 0, 0.1);
+  --glow-primary: 0 0 20px rgba(37, 99, 235, 0.15);
 }
 
 * {
@@ -26,14 +70,35 @@
   padding: 0;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   font-family:
     system-ui,
     -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
     sans-serif;
   transition:
-    background-color 0.2s ease,
-    color 0.2s ease;
+    background-color 0.25s ease,
+    color 0.25s ease;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
 }
