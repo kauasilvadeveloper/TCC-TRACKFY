@@ -2,12 +2,9 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import axios from "axios";
 import styles from "./page.module.scss";
+import { api } from "@/src/services/api";
 
-// Se você tiver uma instância centralizada do axios com o interceptor de token, importe-a aqui.
-// Exemplo: import { api } from "@/services/api";
-const api = axios; 
 
 export default function CreateProjectPage() {
   const router = useRouter();
@@ -17,14 +14,14 @@ export default function CreateProjectPage() {
   const [prazo, setPrazo] = useState("");
   const [memberEmailInput, setMemberEmailInput] = useState("");
   const [invitedEmails, setInvitedEmails] = useState<string[]>([]);
-  
+
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Adicionar e-mail na lista de convites
   const handleAddMember = () => {
     const trimmedEmail = memberEmailInput.trim().toLowerCase();
-    
+
     if (!trimmedEmail) return;
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -67,7 +64,7 @@ export default function CreateProjectPage() {
       setLoading(true);
 
       // Recupera o token do localStorage caso utilize autenticação via Bearer token manual
-      const token = localStorage.getItem("@token"); // Ajuste a chave conforme o seu sistema de login
+      const token = localStorage.getItem("@token") || localStorage.getItem("@session"); // Ajuste a chave conforme o seu sistema de login
 
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
@@ -99,7 +96,7 @@ export default function CreateProjectPage() {
       console.error("Erro ao criar projeto:", err);
       setErrorMessage(
         err.response?.data?.message ||
-          "Ocorreu um erro ao criar o projeto. Tente novamente."
+        "Ocorreu um erro ao criar o projeto. Tente novamente."
       );
     } finally {
       setLoading(false);
@@ -110,20 +107,20 @@ export default function CreateProjectPage() {
     <div className={styles.overlay}>
       <div className={styles.modalContainer}>
         {/* Botão Fechar / Voltar */}
-        <button 
-          className={styles.closeButton} 
-          onClick={() => router.back()} 
+        <button
+          className={styles.closeButton}
+          onClick={() => router.back()}
           aria-label="Fechar"
         >
-          
+
         </button>
 
-        <button 
-          type="button" 
-          className={styles.backButton} 
+        <button
+          type="button"
+          className={styles.backButton}
           onClick={() => router.back()}
         >
-         Voltar para projetos
+          Voltar para projetos
         </button>
 
         {/* Cabeçalho */}
@@ -175,7 +172,7 @@ export default function CreateProjectPage() {
             <label>CONVIDAR MEMBROS</label>
             <div className={styles.inviteRow}>
               <div className={styles.inputWrapper}>
-                
+
                 <input
                   type="email"
                   placeholder="email@empresa.com"
@@ -211,7 +208,7 @@ export default function CreateProjectPage() {
                       className={styles.removeBtn}
                       onClick={() => handleRemoveMember(email)}
                     >
-                      
+
                     </button>
                   </div>
                 ))}

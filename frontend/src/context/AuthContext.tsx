@@ -38,7 +38,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     redirectTo: string = "/dashboard",
   ): Promise<void> => {
     try {
-      const { token, user: userData } = await authService.login(credentials);
+      const response = await authService.login(credentials);
+      const { token, user: userData } = response.login;
+
+      console.log(token, "|", userData);
+
 
       Cookies.set("trackfy_token", token, {
         expires: 7,
