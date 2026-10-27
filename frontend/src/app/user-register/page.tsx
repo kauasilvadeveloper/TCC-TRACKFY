@@ -99,7 +99,7 @@ export default function RegisterUserPage() {
     <div className={styles.overlay}>
       <div className={styles.modalContainer}>
         
-        <Link href="/dashboard" className={styles.backButton}>
+        <Link href="/coordination" className={styles.backButton}>
           <FiArrowLeft /> Voltar para o Dashboard
         </Link>
 

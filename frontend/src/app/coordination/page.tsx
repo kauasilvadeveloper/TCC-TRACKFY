@@ -20,40 +20,33 @@ export default function CoordinationPage() {
 
   useEffect(() => {
     async function fetchCoordinationData() {
-      const token = localStorage.getItem("@token") || localStorage.getItem("@session") || localStorage.getItem("token");
-
-      if (!token) {
-        router.push("/");
-        return;
-      }
-
       try {
         setLoading(true);
-        const headers = { Authorization: `Bearer ${token}` };
+        
+        const token = localStorage.getItem("@token") || localStorage.getItem("@session") || localStorage.getItem("token") || "";
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-        // 1. Busca as turmas do usuário/sistema para listar e extrair membros
-        const classesRes = await api.get("/classes", { headers });
+        // 1. Busca as turmas
+        const classesRes = await api.get("/classes", { headers }).catch(() => ({ data: [] }));
         const classesData = classesRes.data || [];
         setClasses(classesData);
 
-        // 2. Se houver turmas, busca os usuários da primeira turma ou consolida dados reais
-        // (Ajustado para puxar da rota GET /class/:id/users do seu backend)
+        // 2. Busca os utilizadores de todas as turmas
         let allUsers: any[] = [];
-        if (classesData.length > 0) {
-          // Exemplo buscando da primeira turma ativa para preencher o painel
-          const firstClassId = classesData[0].id;
-          const usersRes = await api.get(`/class/${firstClassId}/users`, { headers });
-          allUsers = usersRes.data || [];
+        for (const cls of classesData) {
+          const usersRes = await api.get(`/class/${cls.id}/users`, { headers }).catch(() => ({ data: [] }));
+          const classUsers = usersRes.data || [];
+          
+          for (const u of classUsers) {
+            if (!allUsers.some(existing => existing.id === u.id || existing.email === u.email)) {
+              allUsers.push(u);
+            }
+          }
         }
 
         setUsers(allUsers);
       } catch (err: any) {
         console.error("Erro ao carregar dados da coordenação:", err);
-        if (err.response?.status === 401) {
-          localStorage.clear();
-          router.push("/");
-          return;
-        }
         setErrorMessage("Não foi possível carregar os dados do banco.");
       } finally {
         setLoading(false);
@@ -61,23 +54,28 @@ export default function CoordinationPage() {
     }
 
     fetchCoordinationData();
-  }, [router]);
+  }, []);
 
-  // Filtros baseados na aba ativa e termo de busca
+  // Filtro baseado estritamente no atributo cargo_escola do banco
   const filteredUsers = users.filter((user: any) => {
     const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           user.email?.toLowerCase().includes(searchTerm.toLowerCase());
     
+    // Atributo exato do banco: cargo_escola (aluno, docente, coordenador)
+    const cargo = user.cargo_escola?.toLowerCase() || "";
+
     if (activeTab === "alunos") {
-      return matchesSearch && (user.role === "aluno" || !user.role || user.email?.includes("@aluno"));
+      return matchesSearch && cargo === "aluno";
     } else if (activeTab === "docentes") {
-      return matchesSearch && (user.role === "docente" || user.email?.includes("@docente"));
+      return matchesSearch && cargo === "docente";
     }
+
     return matchesSearch;
   });
 
-  const totalAlunos = users.filter(u => u.role === "aluno" || u.email?.includes("@aluno")).length;
-  const totalDocentes = users.filter(u => u.role === "docente" || u.email?.includes("@docente")).length;
+  // Métricas exatas baseadas em cargo_escola
+  const totalAlunos = users.filter(u => u.cargo_escola?.toLowerCase() === "aluno").length;
+  const totalDocentes = users.filter(u => u.cargo_escola?.toLowerCase() === "docente").length;
   const totalTurmas = classes.length;
 
   return (
@@ -114,7 +112,7 @@ export default function CoordinationPage() {
         </div>
       </section>
 
-      {/* Controls Bar (Tabs & Search & Action Button) */}
+      {/* Controls Bar */}
       <div className={styles.controlsBar}>
         <div className={styles.tabs}>
           <button 
@@ -148,7 +146,6 @@ export default function CoordinationPage() {
             />
           </div>
 
-          {/* Botão solicitado alterado para Cadastrar Usuário direcionando para a rota de cadastro */}
           <button 
             className={styles.registerBtn}
             onClick={() => router.push("/user-register")}
@@ -160,12 +157,11 @@ export default function CoordinationPage() {
 
       {/* Data Table Container */}
       <div className={styles.tableContainer}>
-        {errorMessage && <p style={{ padding: "1.5rem", color: "#f87171" }}>{errorMessage}</p>}
+        {errorMessage && <p style={{ padding: "1rem 1.5rem", color: "#f87171", fontSize: "0.85rem" }}>{errorMessage}</p>}
         
         {loading ? (
           <p style={{ padding: "2rem", color: "#94a3b8", textAlign: "center" }}>Carregando dados do banco...</p>
         ) : activeTab === "turmas" ? (
-          /* Tabela de Turmas */
           <table className={styles.table}>
             <thead>
               <tr>
@@ -189,12 +185,11 @@ export default function CoordinationPage() {
             </tbody>
           </table>
         ) : (
-          /* Tabela de Alunos / Docentes */
           <table className={styles.table}>
             <thead>
               <tr>
                 <th>NOME</th>
-                <th>ID / REGISTRO</th>
+                <th>CARGO / FUNÇÃO</th>
                 <th>E-MAIL</th>
                 <th>STATUS</th>
                 <th></th>
@@ -202,17 +197,18 @@ export default function CoordinationPage() {
             </thead>
             <tbody>
               {filteredUsers.length === 0 ? (
-                <tr><td colSpan={5} style={{ textAlign: "center", color: "#64748b", padding: "2rem" }}>Nenhum registo encontrado no banco.</td></tr>
+                <tr><td colSpan={5} style={{ textAlign: "center", color: "#64748b", padding: "2rem" }}>Nenhum registo encontrado para esta categoria.</td></tr>
               ) : (
                 filteredUsers.map((user: any, index: number) => {
                   const initials = user.name ? user.name.substring(0, 2).toUpperCase() : "US";
+                  const displayCargo = user.cargo_escola ? user.cargo_escola.toUpperCase() : "REGISTRADO";
                   return (
                     <tr key={user.id || index}>
                       <td className={styles.userInfo}>
                         <span className={styles.avatar}>{initials}</span>
                         <span>{user.name}</span>
                       </td>
-                      <td style={{ color: "#94a3b8" }}>{user.id ? user.id.substring(0, 8) : "N/A"}</td>
+                      <td style={{ color: "#3b82f6", fontWeight: 600 }}>{displayCargo}</td>
                       <td style={{ color: "#94a3b8" }}>{user.email}</td>
                       <td>
                         <span className={styles.statusActive}>ATIVO</span>
