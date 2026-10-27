@@ -42,7 +42,7 @@ import { CreateSprintController } from "./controllers/sprint/CreateSprintControl
 import { GetTasksBySprintController } from "./controllers/sprint/GetTasksBySprintController";
 import { ReopenSprintController } from "./controllers/sprint/ReopenSprintController";
 import { UpdateSprintController } from "./controllers/sprint/UpdateSprintController";
-import { GetSprintsByProjectController } from "./controllers/sprint/GetSprintByProjectController";
+// import { GetSprintsByProjectController } from "./controllers/sprint/GetSprintByProjectController";
 
 const router = Router();
 
@@ -155,11 +155,11 @@ router.get(
   isAuthenticated,
   new GetTasksBySprintController().handle,
 );
-router.get(
-  "/sprint/project/:projectId",
-  isAuthenticated,
-  new GetSprintsByProjectController().handle,
-);
+// router.get(
+//   "/sprint/project/:projectId",
+//   isAuthenticated,
+//   new GetSprintsByProjectController().handle,
+// );
 router.patch(
   "/sprint/reopen",
   isAuthenticated,

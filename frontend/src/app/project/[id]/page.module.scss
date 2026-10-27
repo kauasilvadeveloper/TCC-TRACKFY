@@ -1,0 +1,420 @@
+$bg-dark: #070b14;
+$card-bg: #0f172a;
+$border-color: #1e293b;
+$text-primary: #f8fafc;
+$text-secondary: #94a3b8;
+$text-muted: #64748b;
+$primary-blue: #3b82f6;
+$accent-green: #10b981;
+$accent-warning: #f59e0b;
+
+.container {
+  min-height: 100vh;
+  background-color: $bg-dark;
+  color: $text-primary;
+  display: flex;
+  font-family: inherit;
+
+  .mainContent {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+}
+
+// Cabeçalho Interno do Projeto
+.topHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid $border-color;
+  background-color: rgba($card-bg, 0.5);
+
+  .headerLeft {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+
+    .backLink {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: $text-secondary;
+      font-size: 0.8125rem;
+      text-decoration: none;
+      transition: color 0.2s;
+
+      &:hover {
+        color: $text-primary;
+      }
+    }
+
+    .projectTitleRow {
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+
+      h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 0;
+      }
+
+      span {
+        color: $text-secondary;
+        font-size: 0.875rem;
+      }
+    }
+  }
+
+  .headerRight {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    .iconBtn {
+      background: $card-bg;
+      border: 1px solid $border-color;
+      color: $text-primary;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: border-color 0.2s;
+
+      &:hover {
+        border-color: $primary-blue;
+      }
+    }
+
+    .newProjectBtn {
+      background-color: $primary-blue;
+      color: #fff;
+      border: none;
+      padding: 0.625rem 1.25rem;
+      border-radius: 9999px;
+      font-weight: 600;
+      font-size: 0.875rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      transition: background-color 0.2s;
+
+      &:hover {
+        background-color: #2563eb;
+      }
+    }
+  }
+}
+
+// Corpo da Dashboard
+.dashboardBody {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+
+  // Linha de Cards Superiores (Métricas Rápidas)
+  .metricsGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+
+    @media (max-width: 1024px) {
+      grid-template-columns: 1fr;
+    }
+
+    .metricCard {
+      background-color: $card-bg;
+      border: 1px solid $border-color;
+      border-radius: 12px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+
+      .cardHeader {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: $text-secondary;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      .cardContent {
+        margin-top: 1rem;
+
+        .bigNumber {
+          font-size: 2.25rem;
+          font-weight: 700;
+          color: $text-primary;
+          line-height: 1.2;
+        }
+
+        .subtext {
+          font-size: 0.8125rem;
+          color: $text-secondary;
+          margin-top: 0.25rem;
+        }
+      }
+    }
+  }
+
+  // Linha de Gráficos e Seções Principais
+  .chartsGrid {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 1.5rem;
+
+    @media (max-width: 1024px) {
+      grid-template-columns: 1fr;
+    }
+
+    .sectionCard {
+      background-color: $card-bg;
+      border: 1px solid $border-color;
+      border-radius: 12px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+
+      h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin: 0;
+        color: $text-primary;
+      }
+    }
+
+    // Progresso do Sprint
+    .sprintProgressContent {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+
+      .circularProgress {
+        width: 110px;
+        height: 110px;
+        border-radius: 50%;
+        background: conic-gradient($primary-blue 0% 62%, #1e293b 62% 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+
+        &::before {
+          content: "";
+          position: absolute;
+          width: 86px;
+          height: 86px;
+          background-color: $card-bg;
+          border-radius: 50%;
+        }
+
+        span {
+          position: relative;
+          font-size: 1.25rem;
+          font-weight: 700;
+        }
+      }
+
+      .stacksList {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 0.875rem;
+
+        .stackItem {
+          display: flex;
+          flex-direction: column;
+          gap: 0.35rem;
+
+          .stackInfo {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8125rem;
+            color: $text-secondary;
+          }
+
+          .progressBar {
+            width: 100%;
+            height: 6px;
+            background-color: #1e293b;
+            border-radius: 9999px;
+            overflow: hidden;
+
+            .progressFill {
+              height: 100%;
+              background: linear-gradient(90deg, #3b82f6, #60a5fa);
+              border-radius: 9999px;
+            }
+          }
+        }
+      }
+    }
+
+    // Tarefas por Dia (Gráfico Simulado)
+    .tasksPerDayHeader {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .legend {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.75rem;
+        color: $text-secondary;
+
+        span {
+          display: flex;
+          align-items: center;
+          gap: 0.35rem;
+
+          &::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+          }
+
+          &:first-child::before {
+            background-color: $primary-blue;
+          }
+          &:last-child::before {
+            background-color: $text-muted;
+          }
+        }
+      }
+    }
+
+    .barsContainer {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      height: 180px;
+      padding-top: 1rem;
+      border-bottom: 1px solid $border-color;
+
+      .barGroup {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        flex: 1;
+
+        .barsWrapper {
+          display: flex;
+          align-items: flex-end;
+          gap: 4px;
+          height: 140px;
+
+          .bar {
+            width: 14px;
+            border-radius: 4px 4px 0 0;
+            background: linear-gradient(180deg, #3b82f6, #1d4ed8);
+
+            &.pending {
+              background: #1e293b;
+            }
+          }
+        }
+
+        span {
+          font-size: 0.75rem;
+          color: $text-secondary;
+        }
+      }
+    }
+  }
+
+  // Atividades Recentes
+  .recentActivities {
+    background-color: $card-bg;
+    border: 1px solid $border-color;
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    .activitiesHeader {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin: 0;
+      }
+
+      a {
+        color: $primary-blue;
+        font-size: 0.8125rem;
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+
+    .activityItem {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 0.5rem;
+
+      .activityUser {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+
+        .avatar {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background-color: $primary-blue;
+          color: #fff;
+          font-weight: bold;
+          font-size: 0.8125rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        p {
+          margin: 0;
+          font-size: 0.875rem;
+          color: $text-secondary;
+
+          strong {
+            color: $text-primary;
+          }
+
+          span {
+            color: $primary-blue;
+            font-weight: 500;
+          }
+        }
+      }
+
+      .timeAgo {
+        font-size: 0.75rem;
+        color: $text-muted;
+      }
+    }
+  }
+}

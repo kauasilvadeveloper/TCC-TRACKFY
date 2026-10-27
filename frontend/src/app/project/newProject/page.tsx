@@ -5,13 +5,15 @@ import { useRouter } from "next/navigation";
 import styles from "./page.module.scss";
 import { api } from "@/src/services/api";
 
-
 export default function CreateProjectPage() {
   const router = useRouter();
 
-  const [tituloProjeto, setTituloProjeto] = useState("");
-  const [descricao, setDescricao] = useState("");
-  const [prazo, setPrazo] = useState("");
+  // Estados com os nomes correspondentes ao que o backend espera
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [term, setTerm] = useState("");
+  const [tokenGithub, setTokenGithub] = useState(""); // Opcional, caso tenha campo no form
+  
   const [memberEmailInput, setMemberEmailInput] = useState("");
   const [invitedEmails, setInvitedEmails] = useState<string[]>([]);
 
@@ -50,33 +52,40 @@ export default function CreateProjectPage() {
     e.preventDefault();
     setErrorMessage(null);
 
-    if (!tituloProjeto.trim()) {
+    if (!title.trim()) {
       setErrorMessage("O nome do projeto é obrigatório.");
       return;
     }
 
-    if (!prazo) {
+    if (!term) {
       setErrorMessage("Por favor, selecione o prazo de entrega do projeto.");
+      return;
+    }
+
+    // Tratamento seguro da data para o DateTime do Prisma
+    const projectDate = new Date(`${term}T00:00:00.000Z`);
+
+    if (isNaN(projectDate.getTime())) {
+      setErrorMessage("A data de prazo informada é inválida.");
       return;
     }
 
     try {
       setLoading(true);
 
-      // Recupera o token do localStorage caso utilize autenticação via Bearer token manual
-      const token = localStorage.getItem("@token") || localStorage.getItem("@session"); // Ajuste a chave conforme o seu sistema de login
-
+      const token = localStorage.getItem("@token") || localStorage.getItem("@session");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-      // 1. Criar o Projeto -> Chama a rota POST /project
+      // 1. Criar o Projeto -> Envia exatamente as chaves que o backend/Prisma espera
       const projectResponse = await api.post("/project", {
-        tituloProjeto,
-        descricao,
-        prazo: new Date(prazo).toISOString(),
+        title,
+        description,
+        term: projectDate.toISOString(), // Converte para formato ISO compatível com DateTime
+        tokenGithub: tokenGithub || null, // Envia o token caso exista ou nulo
       }, { headers });
 
       const createdProject = projectResponse.data;
-      const projectId = createdProject.id;
+      const projectId = createdProject?.id;
 
       // 2. Se houver e-mails para convidar, cadastra os membros -> Chama POST /project/member
       if (invitedEmails.length > 0 && projectId) {
@@ -90,8 +99,12 @@ export default function CreateProjectPage() {
         );
       }
 
-      // Sucesso: Redireciona de volta para o dashboard/projetos
-      router.push("/dashboard"); // Ajuste para a rota principal do seu dashboard
+      // Sucesso: Redireciona dinamicamente para a página do projeto recém-criado usando o ID
+      if (projectId) {
+        router.push(`/project/${projectId}`);
+      } else {
+        router.push("/dashboard");
+      }
     } catch (err: any) {
       console.error("Erro ao criar projeto:", err);
       setErrorMessage(
@@ -111,9 +124,7 @@ export default function CreateProjectPage() {
           className={styles.closeButton}
           onClick={() => router.back()}
           aria-label="Fechar"
-        >
-
-        </button>
+        />
 
         <button
           type="button"
@@ -132,38 +143,38 @@ export default function CreateProjectPage() {
         {/* Formulário */}
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.fieldGroup}>
-            <label htmlFor="tituloProjeto">
+            <label htmlFor="title">
               NOME DO PROJETO <span className={styles.required}>*</span>
             </label>
             <input
-              id="tituloProjeto"
+              id="title"
               type="text"
               placeholder="Ex: Redesign do Portal"
-              value={tituloProjeto}
-              onChange={(e) => setTituloProjeto(e.target.value)}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
               required
             />
           </div>
 
           <div className={styles.fieldGroup}>
-            <label htmlFor="descricao">DESCRIÇÃO</label>
+            <label htmlFor="description">DESCRIÇÃO</label>
             <textarea
-              id="descricao"
+              id="description"
               placeholder="Objetivo e escopo do projeto..."
-              value={descricao}
-              onChange={(e) => setDescricao(e.target.value)}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
             />
           </div>
 
           <div className={styles.fieldGroup}>
-            <label htmlFor="prazo">
+            <label htmlFor="term">
               PRAZO DE ENTREGA <span className={styles.required}>*</span>
             </label>
             <input
-              id="prazo"
+              id="term"
               type="date"
-              value={prazo}
-              onChange={(e) => setPrazo(e.target.value)}
+              value={term}
+              onChange={(e) => setTerm(e.target.value)}
               required
             />
           </div>
@@ -172,7 +183,6 @@ export default function CreateProjectPage() {
             <label>CONVIDAR MEMBROS</label>
             <div className={styles.inviteRow}>
               <div className={styles.inputWrapper}>
-
                 <input
                   type="email"
                   placeholder="email@empresa.com"
@@ -207,9 +217,7 @@ export default function CreateProjectPage() {
                       type="button"
                       className={styles.removeBtn}
                       onClick={() => handleRemoveMember(email)}
-                    >
-
-                    </button>
+                    />
                   </div>
                 ))}
               </div>

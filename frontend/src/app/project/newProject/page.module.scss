@@ -151,6 +151,10 @@ $danger-color: #ef4444;
       input {
         width: 100%;
         padding-left: 2.25rem;
+        border: 1.2px solid $input-border;
+        border-radius: 10px;
+        padding: 2%;
+        background-color: $input-bg;
       }
 
       .searchIcon {
