@@ -16,18 +16,22 @@ import {
   FiLayers,
   FiCheckSquare,
   FiBarChart2,
+  FiX,
+  FiTag,
+  FiCheck,
 } from "react-icons/fi";
 
 export default function ProjectDashboardPage() {
   const params = useParams();
   const router = useRouter();
 
-  // Captura correta do ID dinâmico da URL
+  // Captura do ID dinâmico da URL
   const projectId = params?.id;
 
   const [project, setProject] = useState<any>(null);
   const [sprints, setSprints] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
+  const [columns, setColumns] = useState<any[]>([]);
 
   const [activeTab, setActiveTab] = useState<"overview" | "sprints" | "tasks">(
     "overview",
@@ -35,10 +39,25 @@ export default function ProjectDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Estados dos Modais
   const [isSprintModalOpen, setIsSprintModalOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
-  const [newSprintName, setNewSprintName] = useState("");
+
+  // Formulário de Sprint
+  const [newSprintTitle, setNewSprintTitle] = useState("");
+  const [newSprintDeadline, setNewSprintDeadline] = useState("");
+  const [newSprintDescription, setNewSprintDescription] = useState("");
+  const [isSubmittingSprint, setIsSubmittingSprint] = useState(false);
+
+  // Formulário de Tarefa
   const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskDescription, setNewTaskDescription] = useState("");
+  const [newTaskDeadline, setNewTaskDeadline] = useState("");
+  const [newTaskStack, setNewTaskStack] = useState("React / Next.js");
+  const [newTaskStatus, setNewTaskStatus] = useState("Pendente");
+  const [newTaskSprintId, setNewTaskSprintId] = useState("");
+  const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
+  const [isSubmittingTask, setIsSubmittingTask] = useState(false);
 
   useEffect(() => {
     async function fetchProjectData() {
@@ -58,15 +77,58 @@ export default function ProjectDashboardPage() {
         setLoading(true);
         const headers = { Authorization: `Bearer ${token}` };
 
-        // 1. Busca os dados principais do projeto (Rota GET /project/:id válida no seu routes.ts)
+        // 1. Busca os dados do projeto
         const projectRes = await api.get(`/project/${projectId}`, { headers });
-        console.log("RESPONSE GET PROJECT:", projectRes);
-
         setProject(projectRes.data);
 
-        // Inicializa vazias para evitar requisições a rotas não mapeadas no backend atual
-        setSprints([]);
-        setTasks([]);
+        // 2. Carrega as sprints do projeto retornadas pela API
+        const projectSprints = Array.isArray(projectRes.data?.sprints)
+          ? projectRes.data.sprints
+          : [];
+        setSprints(projectSprints);
+
+        // 3. Busca o Kanban do projeto para obter colunas e tarefas
+        try {
+          const kanbanRes = await api.get(`/kanban/${projectId}`, { headers });
+          if (kanbanRes.data?.colunas) {
+            setColumns(kanbanRes.data.colunas);
+
+            const extractedTasks = kanbanRes.data.colunas.flatMap(
+              (col: any) =>
+                (col.tarefas || []).map((t: any) => ({
+                  ...t,
+                  colunaNome: col.tituloColuna,
+                })),
+            );
+            setTasks(extractedTasks);
+          }
+        } catch (kanbanErr: any) {
+          // Se o projeto ainda não tiver Kanban (404), inicializa com colunas padrão
+          if (kanbanErr?.response?.status === 404) {
+            try {
+              const createdKanban = await api.post(
+                "/kanban",
+                {
+                  tituloKanban: `Quadro - ${projectRes.data.tituloProjeto || "Projeto"}`,
+                  fkProjeto: Number(projectId),
+                },
+                { headers },
+              );
+
+              if (createdKanban.data?.id) {
+                const kId = createdKanban.data.id;
+                const [col1, col2, col3] = await Promise.all([
+                  api.post("/kanban/column", { tituloColuna: "A Fazer", fkKanban: kId }, { headers }),
+                  api.post("/kanban/column", { tituloColuna: "Em Andamento", fkKanban: kId }, { headers }),
+                  api.post("/kanban/column", { tituloColuna: "Concluído", fkKanban: kId }, { headers }),
+                ]);
+                setColumns([col1.data, col2.data, col3.data]);
+              }
+            } catch (autoKanbanErr) {
+              console.warn("Aviso ao provisionar Kanban inicial:", autoKanbanErr);
+            }
+          }
+        }
       } catch (error: any) {
         console.error("Erro ao carregar dados do projeto:", error);
 
@@ -85,49 +147,135 @@ export default function ProjectDashboardPage() {
     fetchProjectData();
   }, [projectId, router]);
 
+  // Criação de Sprint
   const handleCreateSprint = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newSprintName.trim()) return;
+    if (!newSprintTitle.trim()) {
+      alert("Por favor, preencha o título da sprint.");
+      return;
+    }
+    if (!newSprintDeadline) {
+      alert("Por favor, selecione a data de término da sprint.");
+      return;
+    }
+
+    const token = Cookies.get("trackfy_token");
+    if (!token) {
+      alert("Sessão expirada. Faça login novamente.");
+      router.push("/");
+      return;
+    }
+
     try {
-      const token =
-        localStorage.getItem("@token") ||
-        localStorage.getItem("@session") ||
-        localStorage.getItem("token");
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      setIsSubmittingSprint(true);
+      const headers = { Authorization: `Bearer ${token}` };
 
       const res = await api.post(
         `/sprint`,
-        { name: newSprintName, projectId },
+        {
+          tituloSprint: newSprintTitle.trim(),
+          prazoSprint: new Date(newSprintDeadline).toISOString(),
+          descricaoSprint: newSprintDescription.trim() || undefined,
+        },
         { headers },
       );
+
       setSprints((prev) => [...prev, res.data]);
-      setNewSprintName("");
+      setNewSprintTitle("");
+      setNewSprintDeadline("");
+      setNewSprintDescription("");
       setIsSprintModalOpen(false);
-    } catch (err) {
-      alert("Erro ao criar sprint.");
+    } catch (err: any) {
+      console.error("Erro ao criar sprint:", err);
+      alert(err.response?.data?.message || "Erro ao criar sprint.");
+    } finally {
+      setIsSubmittingSprint(false);
     }
   };
 
+  // Criação de Tarefa
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTaskTitle.trim()) return;
+    if (!newTaskTitle.trim()) {
+      alert("Por favor, informe o título da tarefa.");
+      return;
+    }
+    if (!newTaskDeadline) {
+      alert("Por favor, informe o prazo limite da tarefa.");
+      return;
+    }
+    if (!newTaskSprintId) {
+      alert("Por favor, selecione uma sprint para associar a tarefa.");
+      return;
+    }
+
+    const token = Cookies.get("trackfy_token");
+    if (!token) {
+      alert("Sessão expirada. Faça login novamente.");
+      router.push("/");
+      return;
+    }
+
+    // Associa automaticamente à primeira coluna do Kanban
+    let targetColumnId = columns[0]?.id;
+
+    if (!targetColumnId) {
+      try {
+        const kanbanRes = await api.get(`/kanban/${projectId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (kanbanRes.data?.colunas?.length > 0) {
+          targetColumnId = kanbanRes.data.colunas[0].id;
+          setColumns(kanbanRes.data.colunas);
+        }
+      } catch (err) {
+        console.warn("Erro ao buscar coluna Kanban para a tarefa:", err);
+      }
+    }
+
+    if (!targetColumnId) {
+      alert("Não foi possível identificar a coluna do quadro para a tarefa.");
+      return;
+    }
+
     try {
-      const token =
-        localStorage.getItem("@token") ||
-        localStorage.getItem("@session") ||
-        localStorage.getItem("token");
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      setIsSubmittingTask(true);
+      const headers = { Authorization: `Bearer ${token}` };
 
       const res = await api.post(
         `/task`,
-        { title: newTaskTitle, projectId },
+        {
+          tituloTarefa: newTaskTitle.trim(),
+          descricaoTarefa: newTaskDescription.trim() || undefined,
+          status: newTaskStatus,
+          stack: newTaskStack,
+          prazoTarefa: new Date(newTaskDeadline).toISOString(),
+          fkSprint: Number(newTaskSprintId),
+          fkColuna: Number(targetColumnId),
+          usuarioIds:
+            selectedUserIds.length > 0
+              ? selectedUserIds.map((id) => Number(id))
+              : undefined,
+        },
         { headers },
       );
+
       setTasks((prev) => [...prev, res.data]);
+
+      // Resetar formulário
       setNewTaskTitle("");
+      setNewTaskDescription("");
+      setNewTaskDeadline("");
+      setNewTaskStack("React / Next.js");
+      setNewTaskStatus("Pendente");
+      setNewTaskSprintId("");
+      setSelectedUserIds([]);
       setIsTaskModalOpen(false);
-    } catch (err) {
-      alert("Erro ao criar tarefa.");
+    } catch (err: any) {
+      console.error("Erro ao criar tarefa:", err);
+      alert(err.response?.data?.message || "Erro ao criar tarefa.");
+    } finally {
+      setIsSubmittingTask(false);
     }
   };
 
@@ -173,14 +321,23 @@ export default function ProjectDashboardPage() {
     );
   }
 
-  const pendingTasksCount = tasks.filter(
-    (t: any) => !t.completed && t.status !== "DONE",
-  ).length;
-  const completedTasksCount = tasks.filter(
-    (t: any) => t.completed || t.status === "DONE",
-  ).length;
-  const formattedTerm = project?.term
-    ? new Date(project.term).toLocaleDateString("pt-BR")
+  const projectMembers =
+    project?.usuarios?.map((u: any) => u.usuario).filter(Boolean) ||
+    project?.members ||
+    [];
+
+  const pendingTasksCount = tasks.filter((t: any) => {
+    const s = (t.status || "").toLowerCase();
+    return s !== "concluída" && s !== "concluida" && s !== "done" && !t.completed;
+  }).length;
+
+  const completedTasksCount = tasks.filter((t: any) => {
+    const s = (t.status || "").toLowerCase();
+    return s === "concluída" || s === "concluida" || s === "done" || t.completed;
+  }).length;
+
+  const formattedTerm = project?.term || project?.prazo
+    ? new Date(project.term || project.prazo).toLocaleDateString("pt-BR")
     : "Sem prazo definido";
 
   return (
@@ -211,109 +368,45 @@ export default function ProjectDashboardPage() {
           <div className={styles.headerRight}>
             <button
               className={styles.newProjectBtn}
-              onClick={() => router.push("/project")}
+              onClick={() => router.push("/project/newProject")}
             >
               <FiPlus /> Novo Projeto
             </button>
           </div>
         </header>
 
-        <div
-          style={{
-            display: "flex",
-            gap: "1rem",
-            padding: "1.5rem 2rem 0 2rem",
-            borderBottom: "1px solid #1e293b",
-          }}
-        >
+        {/* Abas de Navegação */}
+        <div className={styles.navTabsContainer}>
           <button
             onClick={() => setActiveTab("overview")}
-            style={{
-              background: "transparent",
-              border: "none",
-              color: activeTab === "overview" ? "#3b82f6" : "#94a3b8",
-              padding: "0.75rem 1rem",
-              cursor: "pointer",
-              fontWeight: 600,
-              borderBottom:
-                activeTab === "overview"
-                  ? "2px solid #3b82f6"
-                  : "2px solid transparent",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-            }}
+            className={`${styles.tabBtn} ${activeTab === "overview" ? styles.activeTab : ""}`}
           >
             <FiBarChart2 /> Visão Geral
           </button>
           <button
             onClick={() => setActiveTab("sprints")}
-            style={{
-              background: "transparent",
-              border: "none",
-              color: activeTab === "sprints" ? "#3b82f6" : "#94a3b8",
-              padding: "0.75rem 1rem",
-              cursor: "pointer",
-              fontWeight: 600,
-              borderBottom:
-                activeTab === "sprints"
-                  ? "2px solid #3b82f6"
-                  : "2px solid transparent",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-            }}
+            className={`${styles.tabBtn} ${activeTab === "sprints" ? styles.activeTab : ""}`}
           >
             <FiLayers /> Sprints ({sprints.length})
           </button>
           <button
             onClick={() => setActiveTab("tasks")}
-            style={{
-              background: "transparent",
-              border: "none",
-              color: activeTab === "tasks" ? "#3b82f6" : "#94a3b8",
-              padding: "0.75rem 1rem",
-              cursor: "pointer",
-              fontWeight: 600,
-              borderBottom:
-                activeTab === "tasks"
-                  ? "2px solid #3b82f6"
-                  : "2px solid transparent",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-            }}
+            className={`${styles.tabBtn} ${activeTab === "tasks" ? styles.activeTab : ""}`}
           >
             <FiCheckSquare /> Tarefas ({tasks.length})
           </button>
         </div>
 
         <div className={styles.dashboardBody}>
+          {/* Aba 1: Visão Geral */}
           {activeTab === "overview" && (
             <>
-              {project.description && (
-                <div
-                  style={{
-                    background: "#0f172a",
-                    border: "1px solid #1e293b",
-                    padding: "1.25rem",
-                    borderRadius: "12px",
-                    color: "#94a3b8",
-                    marginBottom: "1rem",
-                  }}
-                >
-                  <strong
-                    style={{
-                      color: "#f8fafc",
-                      display: "block",
-                      marginBottom: "0.5rem",
-                    }}
-                  >
-                    Sobre o Projeto:
-                  </strong>
-                  {project.description}
+              {project.description || project.descricao ? (
+                <div className={styles.projectDescriptionBox}>
+                  <strong>Sobre o Projeto:</strong>
+                  {project.description || project.descricao}
                 </div>
-              )}
+              ) : null}
 
               <div className={styles.metricsGrid}>
                 <div className={styles.metricCard}>
@@ -323,6 +416,7 @@ export default function ProjectDashboardPage() {
                   </div>
                   <div className={styles.cardContent}>
                     <div className={styles.bigNumber}>{pendingTasksCount}</div>
+                    <div className={styles.subtext}>Aguardando conclusão</div>
                   </div>
                 </div>
 
@@ -332,355 +426,525 @@ export default function ProjectDashboardPage() {
                     <FiCheckCircle color="#10b981" size={18} />
                   </div>
                   <div className={styles.cardContent}>
-                    <div className={styles.bigNumber}>
-                      {completedTasksCount}
-                    </div>
+                    <div className={styles.bigNumber}>{completedTasksCount}</div>
+                    <div className={styles.subtext}>Finalizadas com sucesso</div>
                   </div>
                 </div>
 
                 <div className={styles.metricCard}>
                   <div className={styles.cardHeader}>
-                    <span>Membros / Convites</span>
+                    <span>Membros do Projeto</span>
                     <FiUsers color="#3b82f6" size={18} />
                   </div>
                   <div className={styles.cardContent}>
                     <div className={styles.bigNumber}>
-                      {project.members?.length || 1}
+                      {projectMembers.length || 1}
                     </div>
+                    <div className={styles.subtext}>Colaboradores ativos</div>
                   </div>
                 </div>
               </div>
 
-              <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
+              <div className={styles.quickActionsRow}>
                 <button
+                  className={styles.secondaryActionBtn}
                   onClick={() => setIsSprintModalOpen(true)}
-                  style={{
-                    background: "#1e293b",
-                    color: "#fff",
-                    border: "1px solid #334155",
-                    padding: "0.75rem 1.25rem",
-                    borderRadius: "8px",
-                    cursor: "pointer",
-                    fontWeight: 600,
-                  }}
                 >
-                  + Criar Nova Sprint
+                  <FiPlus /> Criar Nova Sprint
                 </button>
                 <button
-                  onClick={() => setIsTaskModalOpen(true)}
-                  style={{
-                    background: "#3b82f6",
-                    color: "#fff",
-                    border: "none",
-                    padding: "0.75rem 1.25rem",
-                    borderRadius: "8px",
-                    cursor: "pointer",
-                    fontWeight: 600,
+                  className={styles.primaryActionBtn}
+                  onClick={() => {
+                    if (sprints.length === 0) {
+                      alert("Crie ao menos uma Sprint antes de adicionar tarefas.");
+                      setIsSprintModalOpen(true);
+                      return;
+                    }
+                    if (!newTaskSprintId && sprints.length > 0) {
+                      setNewTaskSprintId(String(sprints[0].id));
+                    }
+                    setIsTaskModalOpen(true);
                   }}
                 >
-                  + Adicionar Tarefa
+                  <FiPlus /> Adicionar Tarefa
                 </button>
               </div>
             </>
           )}
 
+          {/* Aba 2: Sprints */}
           {activeTab === "sprints" && (
-            <div
-              className={styles.sectionCard}
-              style={{
-                background: "#0f172a",
-                border: "1px solid #1e293b",
-                padding: "1.5rem",
-                borderRadius: "12px",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "1.5rem",
-                }}
-              >
-                <h3>Sprints do Projeto</h3>
+            <div className={styles.tabSection}>
+              <div className={styles.sectionHeader}>
+                <div>
+                  <h3>Sprints do Projeto</h3>
+                  <p className={styles.sectionSubtitle}>
+                    Ciclos de desenvolvimento e prazos de entrega
+                  </p>
+                </div>
                 <button
+                  className={styles.primaryActionBtn}
                   onClick={() => setIsSprintModalOpen(true)}
-                  style={{
-                    background: "#3b82f6",
-                    color: "#fff",
-                    border: "none",
-                    padding: "0.5rem 1rem",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                  }}
                 >
-                  Nova Sprint
+                  <FiPlus /> Nova Sprint
                 </button>
               </div>
+
               {sprints.length === 0 ? (
-                <p style={{ color: "#94a3b8" }}>
-                  Nenhuma sprint cadastrada nesta sessão.
-                </p>
+                <div className={styles.emptyState}>
+                  <FiLayers size={44} color="#64748b" />
+                  <p>Nenhuma sprint cadastrada para este projeto.</p>
+                  <button
+                    className={styles.secondaryActionBtn}
+                    onClick={() => setIsSprintModalOpen(true)}
+                  >
+                    Criar Primeira Sprint
+                  </button>
+                </div>
               ) : (
-                <ul
-                  style={{
-                    listStyle: "none",
-                    padding: 0,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "0.75rem",
-                  }}
-                >
-                  {sprints.map((sprint: any) => (
-                    <li
-                      key={sprint.id}
-                      style={{
-                        background: "#1e293b",
-                        padding: "1rem",
-                        borderRadius: "8px",
-                        display: "flex",
-                        justifyContent: "space-between",
-                      }}
-                    >
-                      <span>{sprint.name}</span>
-                      <span style={{ color: "#94a3b8", fontSize: "0.85rem" }}>
-                        {sprint.status || "Ativa"}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                <div className={styles.sprintsGrid}>
+                  {sprints.map((sprint: any) => {
+                    const sprintTasks = tasks.filter(
+                      (t: any) =>
+                        t.fkSprint === sprint.id || t.sprint?.id === sprint.id,
+                    );
+                    const deadlineFormatted = sprint.prazoSprint
+                      ? new Date(sprint.prazoSprint).toLocaleDateString("pt-BR")
+                      : "Sem prazo";
+
+                    return (
+                      <div key={sprint.id} className={styles.sprintCard}>
+                        <div className={styles.sprintCardHeader}>
+                          <h4>{sprint.tituloSprint || sprint.name}</h4>
+                          <span className={styles.sprintDateBadge}>
+                            <FiCalendar size={13} /> {deadlineFormatted}
+                          </span>
+                        </div>
+
+                        {sprint.descricaoSprint && (
+                          <p className={styles.sprintDescription}>
+                            {sprint.descricaoSprint}
+                          </p>
+                        )}
+
+                        <div className={styles.sprintCardFooter}>
+                          <span className={styles.tasksCountBadge}>
+                            <FiCheckSquare size={13} /> {sprintTasks.length}{" "}
+                            {sprintTasks.length === 1 ? "tarefa" : "tarefas"}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           )}
 
+          {/* Aba 3: Tarefas */}
           {activeTab === "tasks" && (
-            <div
-              className={styles.sectionCard}
-              style={{
-                background: "#0f172a",
-                border: "1px solid #1e293b",
-                padding: "1.5rem",
-                borderRadius: "12px",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "1.5rem",
-                }}
-              >
-                <h3>Tarefas do Projeto</h3>
+            <div className={styles.tabSection}>
+              <div className={styles.sectionHeader}>
+                <div>
+                  <h3>Tarefas do Projeto</h3>
+                  <p className={styles.sectionSubtitle}>
+                    Acompanhe o andamento de cada atividade
+                  </p>
+                </div>
                 <button
-                  onClick={() => setIsTaskModalOpen(true)}
-                  style={{
-                    background: "#3b82f6",
-                    color: "#fff",
-                    border: "none",
-                    padding: "0.5rem 1rem",
-                    borderRadius: "6px",
-                    cursor: "pointer",
+                  className={styles.primaryActionBtn}
+                  onClick={() => {
+                    if (sprints.length === 0) {
+                      alert("Crie ao menos uma Sprint antes de adicionar tarefas.");
+                      setIsSprintModalOpen(true);
+                      return;
+                    }
+                    if (!newTaskSprintId && sprints.length > 0) {
+                      setNewTaskSprintId(String(sprints[0].id));
+                    }
+                    setIsTaskModalOpen(true);
                   }}
                 >
-                  Nova Tarefa
+                  <FiPlus /> Nova Tarefa
                 </button>
               </div>
+
               {tasks.length === 0 ? (
-                <p style={{ color: "#94a3b8" }}>
-                  Nenhuma tarefa cadastrada nesta sessão.
-                </p>
+                <div className={styles.emptyState}>
+                  <FiCheckSquare size={44} color="#64748b" />
+                  <p>Nenhuma tarefa cadastrada neste projeto.</p>
+                  <button
+                    className={styles.secondaryActionBtn}
+                    onClick={() => {
+                      if (sprints.length === 0) {
+                        alert("Crie ao menos uma Sprint antes de adicionar tarefas.");
+                        setIsSprintModalOpen(true);
+                        return;
+                      }
+                      if (!newTaskSprintId && sprints.length > 0) {
+                        setNewTaskSprintId(String(sprints[0].id));
+                      }
+                      setIsTaskModalOpen(true);
+                    }}
+                  >
+                    Criar Primeira Tarefa
+                  </button>
+                </div>
               ) : (
-                <ul
-                  style={{
-                    listStyle: "none",
-                    padding: 0,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "0.75rem",
-                  }}
-                >
-                  {tasks.map((task: any) => (
-                    <li
-                      key={task.id}
-                      style={{
-                        background: "#1e293b",
-                        padding: "1rem",
-                        borderRadius: "8px",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                      }}
-                    >
-                      <span>{task.title}</span>
-                      <span
-                        style={{
-                          fontSize: "0.85rem",
-                          color: task.completed ? "#10b981" : "#f59e0b",
-                        }}
-                      >
-                        {task.completed ? "Concluída" : "Pendente"}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                <div className={styles.tasksGrid}>
+                  {tasks.map((task: any) => {
+                    const taskSprint =
+                      task.sprint?.tituloSprint ||
+                      sprints.find((s: any) => s.id === task.fkSprint)
+                        ?.tituloSprint ||
+                      (task.fkSprint ? `Sprint #${task.fkSprint}` : "Geral");
+
+                    const taskDeadline = task.prazoTarefa
+                      ? new Date(task.prazoTarefa).toLocaleDateString("pt-BR")
+                      : null;
+
+                    const assignedUsers =
+                      task.usuarios
+                        ?.map((u: any) => u.usuario?.nome || u.usuario?.email)
+                        .filter(Boolean) || [];
+
+                    const statusStr = (task.status || "Pendente").toLowerCase();
+                    const isDone =
+                      statusStr.includes("conclu") || statusStr === "done";
+                    const isInProgress =
+                      statusStr.includes("andamento") ||
+                      statusStr === "in_progress";
+
+                    const statusClass = isDone
+                      ? styles.statusDone
+                      : isInProgress
+                      ? styles.statusProgress
+                      : styles.statusPending;
+
+                    return (
+                      <div key={task.id} className={styles.taskCard}>
+                        <div className={styles.taskCardHeader}>
+                          <div className={styles.taskBadges}>
+                            <span
+                              className={`${styles.statusBadge} ${statusClass}`}
+                            >
+                              {task.status || "Pendente"}
+                            </span>
+                            {task.stack && (
+                              <span className={styles.stackBadge}>
+                                <FiTag size={12} /> {task.stack}
+                              </span>
+                            )}
+                            <span className={styles.sprintBadge}>
+                              <FiLayers size={12} /> {taskSprint}
+                            </span>
+                          </div>
+                        </div>
+
+                        <h4 className={styles.taskTitle}>
+                          {task.tituloTarefa || task.title}
+                        </h4>
+
+                        {task.descricaoTarefa && (
+                          <p className={styles.taskDescription}>
+                            {task.descricaoTarefa}
+                          </p>
+                        )}
+
+                        <div className={styles.taskCardFooter}>
+                          <div className={styles.footerMeta}>
+                            {taskDeadline && (
+                              <span className={styles.taskDate}>
+                                <FiCalendar size={13} /> {taskDeadline}
+                              </span>
+                            )}
+                          </div>
+
+                          {assignedUsers.length > 0 && (
+                            <div className={styles.assignedMembers}>
+                              <FiUsers size={13} />
+                              <span>{assignedUsers.join(", ")}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           )}
         </div>
       </div>
 
+      {/* Modal de Criação de Sprint */}
       {isSprintModalOpen && (
         <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.7)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 50,
-          }}
+          className={styles.modalOverlay}
+          onClick={() => setIsSprintModalOpen(false)}
         >
-          <form
-            onSubmit={handleCreateSprint}
-            style={{
-              background: "#0f172a",
-              border: "1px solid #1e293b",
-              padding: "2rem",
-              borderRadius: "12px",
-              width: "400px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "1rem",
-            }}
+          <div
+            className={styles.modalContainer}
+            onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ color: "#fff", margin: 0 }}>Criar Nova Sprint</h3>
-            <input
-              type="text"
-              placeholder="Nome da Sprint (ex: Sprint 1)"
-              value={newSprintName}
-              onChange={(e) => setNewSprintName(e.target.value)}
-              style={{
-                background: "#1e293b",
-                border: "1px solid #334155",
-                padding: "0.75rem",
-                borderRadius: "8px",
-                color: "#fff",
-              }}
-              required
-            />
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: "0.75rem",
-              }}
-            >
+            <div className={styles.modalHeader}>
+              <div>
+                <h3 className={styles.modalTitle}>Criar Nova Sprint</h3>
+                <p className={styles.modalSubtitle}>
+                  Defina o ciclo de entregas e prazo para a equipe
+                </p>
+              </div>
               <button
                 type="button"
+                className={styles.closeBtn}
                 onClick={() => setIsSprintModalOpen(false)}
-                style={{
-                  background: "transparent",
-                  color: "#94a3b8",
-                  border: "none",
-                  cursor: "pointer",
-                }}
+                aria-label="Fechar"
               >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                style={{
-                  background: "#3b82f6",
-                  color: "#fff",
-                  border: "none",
-                  padding: "0.5rem 1rem",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                }}
-              >
-                Salvar
+                <FiX />
               </button>
             </div>
-          </form>
+
+            <form onSubmit={handleCreateSprint} className={styles.modalForm}>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>
+                  Título da Sprint <span className={styles.required}>*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ex: Sprint 1 — Autenticação e Layout"
+                  className={styles.input}
+                  value={newSprintTitle}
+                  onChange={(e) => setNewSprintTitle(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.label}>
+                  Data de Término / Prazo <span className={styles.required}>*</span>
+                </label>
+                <input
+                  type="date"
+                  className={styles.input}
+                  value={newSprintDeadline}
+                  onChange={(e) => setNewSprintDeadline(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Descrição (Opcional)</label>
+                <textarea
+                  placeholder="Descreva as metas e escopo desta sprint..."
+                  rows={3}
+                  className={styles.textarea}
+                  value={newSprintDescription}
+                  onChange={(e) => setNewSprintDescription(e.target.value)}
+                />
+              </div>
+
+              <div className={styles.modalFooter}>
+                <button
+                  type="button"
+                  className={styles.cancelBtn}
+                  onClick={() => setIsSprintModalOpen(false)}
+                  disabled={isSubmittingSprint}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className={styles.submitBtn}
+                  disabled={isSubmittingSprint}
+                >
+                  <FiCheck />
+                  <span>{isSubmittingSprint ? "Criando..." : "Salvar Sprint"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
+      {/* Modal de Criação de Tarefa */}
       {isTaskModalOpen && (
         <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.7)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 50,
-          }}
+          className={styles.modalOverlay}
+          onClick={() => setIsTaskModalOpen(false)}
         >
-          <form
-            onSubmit={handleCreateTask}
-            style={{
-              background: "#0f172a",
-              border: "1px solid #1e293b",
-              padding: "2rem",
-              borderRadius: "12px",
-              width: "400px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "1rem",
-            }}
+          <div
+            className={styles.modalContainer}
+            onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ color: "#fff", margin: 0 }}>Criar Nova Tarefa</h3>
-            <input
-              type="text"
-              placeholder="Título da tarefa..."
-              value={newTaskTitle}
-              onChange={(e) => setNewTaskTitle(e.target.value)}
-              style={{
-                background: "#1e293b",
-                border: "1px solid #334155",
-                padding: "0.75rem",
-                borderRadius: "8px",
-                color: "#fff",
-              }}
-              required
-            />
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: "0.75rem",
-              }}
-            >
+            <div className={styles.modalHeader}>
+              <div>
+                <h3 className={styles.modalTitle}>Criar Nova Tarefa</h3>
+                <p className={styles.modalSubtitle}>
+                  Adicione uma atividade detalhada ao projeto
+                </p>
+              </div>
               <button
                 type="button"
+                className={styles.closeBtn}
                 onClick={() => setIsTaskModalOpen(false)}
-                style={{
-                  background: "transparent",
-                  color: "#94a3b8",
-                  border: "none",
-                  cursor: "pointer",
-                }}
+                aria-label="Fechar"
               >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                style={{
-                  background: "#3b82f6",
-                  color: "#fff",
-                  border: "none",
-                  padding: "0.5rem 1rem",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                }}
-              >
-                Salvar
+                <FiX />
               </button>
             </div>
-          </form>
+
+            <form onSubmit={handleCreateTask} className={styles.modalForm}>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>
+                  Título da Tarefa <span className={styles.required}>*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ex: Criar tela de login responsiva"
+                  className={styles.input}
+                  value={newTaskTitle}
+                  onChange={(e) => setNewTaskTitle(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Descrição (Opcional)</label>
+                <textarea
+                  placeholder="Descreva o objetivo, critérios e regras da tarefa..."
+                  rows={3}
+                  className={styles.textarea}
+                  value={newTaskDescription}
+                  onChange={(e) => setNewTaskDescription(e.target.value)}
+                />
+              </div>
+
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>
+                    Prazo / Data Limite <span className={styles.required}>*</span>
+                  </label>
+                  <input
+                    type="date"
+                    className={styles.input}
+                    value={newTaskDeadline}
+                    onChange={(e) => setNewTaskDeadline(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Stack Tecnológica</label>
+                  <select
+                    className={styles.select}
+                    value={newTaskStack}
+                    onChange={(e) => setNewTaskStack(e.target.value)}
+                  >
+                    <option value="React / Next.js">React / Next.js</option>
+                    <option value="Node.js / Express">Node.js / Express</option>
+                    <option value="TypeScript">TypeScript</option>
+                    <option value="CSS / SCSS">CSS / SCSS</option>
+                    <option value="Banco de Dados / Prisma">
+                      Banco de Dados / Prisma
+                    </option>
+                    <option value="Outro">Outro</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Status Inicial</label>
+                  <select
+                    className={styles.select}
+                    value={newTaskStatus}
+                    onChange={(e) => setNewTaskStatus(e.target.value)}
+                  >
+                    <option value="Pendente">Pendente</option>
+                    <option value="Em andamento">Em andamento</option>
+                    <option value="Concluída">Concluída</option>
+                  </select>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>
+                    Sprint Vinculada <span className={styles.required}>*</span>
+                  </label>
+                  <select
+                    className={styles.select}
+                    value={newTaskSprintId}
+                    onChange={(e) => setNewTaskSprintId(e.target.value)}
+                    required
+                  >
+                    <option value="">Selecione uma sprint...</option>
+                    {sprints.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.tituloSprint || s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Membros Responsáveis */}
+              <div className={styles.formGroup}>
+                <label className={styles.label}>
+                  Membros Responsáveis (Opcional)
+                </label>
+                {projectMembers.length === 0 ? (
+                  <p className={styles.helperText}>
+                    Nenhum colaborador vinculado a este projeto.
+                  </p>
+                ) : (
+                  <div className={styles.membersCheckList}>
+                    {projectMembers.map((member: any) => {
+                      const isChecked = selectedUserIds.includes(member.id);
+                      return (
+                        <label key={member.id} className={styles.checkboxLabel}>
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {
+                              if (isChecked) {
+                                setSelectedUserIds((prev) =>
+                                  prev.filter((id) => id !== member.id),
+                                );
+                              } else {
+                                setSelectedUserIds((prev) => [
+                                  ...prev,
+                                  member.id,
+                                ]);
+                              }
+                            }}
+                          />
+                          <span>{member.nome || member.email}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.modalFooter}>
+                <button
+                  type="button"
+                  className={styles.cancelBtn}
+                  onClick={() => setIsTaskModalOpen(false)}
+                  disabled={isSubmittingTask}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className={styles.submitBtn}
+                  disabled={isSubmittingTask}
+                >
+                  <FiCheck />
+                  <span>{isSubmittingTask ? "Criando..." : "Salvar Tarefa"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

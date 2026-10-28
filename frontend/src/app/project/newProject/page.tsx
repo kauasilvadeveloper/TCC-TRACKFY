@@ -1,54 +1,209 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./page.module.scss";
 import { api } from "@/src/services/api";
 import Cookies from "js-cookie";
+import { User } from "@/src/types/user";
 
 export default function CreateProjectPage() {
   const router = useRouter();
 
-  // Estados com os nomes correspondentes ao que o backend espera
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [term, setTerm] = useState("");
-  const [tokenGithub, setTokenGithub] = useState(""); // Opcional, caso tenha campo no form
+  const [tokenGithub, setTokenGithub] = useState("");
 
-  const [memberEmailInput, setMemberEmailInput] = useState("");
-  const [invitedEmails, setInvitedEmails] = useState<string[]>([]);
+  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [invitedUsers, setInvitedUsers] = useState<User[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Adicionar e-mail na lista de convites
+  useEffect(() => {
+    const fetchClassesAndUsers = async () => {
+      try {
+        const token = Cookies.get("trackfy_token");
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+        const rawUser = Cookies.get("trackfy_user");
+        let currentUserId: string | number | null = null;
+
+        console.log("🔍 [TRACKFY DEBUG 1] Cookie rawUser:", rawUser);
+
+        if (rawUser) {
+          try {
+            const parsed = JSON.parse(rawUser);
+            currentUserId =
+              parsed.id ??
+              parsed.usuarioId ??
+              parsed.fkUsuario ??
+              parsed.FK_usuario ??
+              parsed.user?.id;
+            console.log(
+              "🔍 [TRACKFY DEBUG 1.1] User retornado do cookie:",
+              parsed,
+            );
+            console.log(
+              "🔍 [TRACKFY DEBUG 1.2] ID do Usuário Logado Extraído:",
+              currentUserId,
+            );
+          } catch (e) {
+            console.error(
+              "❌ [TRACKFY DEBUG ERROR] Erro ao decodificar trackfy_user:",
+              e,
+            );
+          }
+        }
+
+        // 1. Busca as salas associadas ao usuário
+        const response = await api.get("/classes", { headers });
+        console.log(
+          "🔍 [TRACKFY DEBUG 2] Resposta GET /classes:",
+          response.data,
+        );
+
+        const classes = Array.isArray(response.data) ? response.data : [];
+
+        if (classes.length === 0) {
+          console.warn(
+            "⚠️ [TRACKFY DEBUG 2.1] Nenhuma sala encontrada na requisição /classes.",
+          );
+        }
+
+        // 2. Busca os alunos de cada sala pela rota /class/:id/users
+        const userPromises = classes.map((cls: any) => {
+          console.log(
+            `🔍 [TRACKFY DEBUG 3] Disparando GET /class/${cls.id}/users...`,
+          );
+          return api.get(`/class/${cls.id}/users`, { headers }).catch((err) => {
+            console.error(
+              `❌ [TRACKFY DEBUG ERROR] Erro ao buscar /class/${cls.id}/users:`,
+              err.response || err,
+            );
+            return null;
+          });
+        });
+
+        const responses = await Promise.all(userPromises);
+        const usersMap = new Map<string, any>();
+
+        responses.forEach((res, index) => {
+          const classId = classes[index]?.id;
+          if (!res || !res.data) {
+            console.warn(
+              `⚠️ [TRACKFY DEBUG 4] Sem resposta válida para sala ID ${classId}`,
+            );
+            return;
+          }
+
+          console.log(
+            `🔍 [TRACKFY DEBUG 4] Resposta de /class/${classId}/users:`,
+            res.data,
+          );
+
+          const rawMembers: any[] = Array.isArray(res.data)
+            ? res.data
+            : res.data.users ||
+              res.data.usuarios ||
+              res.data.alunos ||
+              res.data.members ||
+              [];
+
+          console.log(
+            `🔍 [TRACKFY DEBUG 4.1] Lista bruta de membros da sala ${classId}:`,
+            rawMembers,
+          );
+
+          rawMembers.forEach((item) => {
+            const userObj = item.usuario || item.user || item.aluno || item;
+
+            // Mapeamento correto para fkUsuario
+            const uid =
+              item?.fkUsuario ??
+              item?.FK_usuario ??
+              item?.fk_usuario ??
+              userObj?.fkUsuario ??
+              userObj?.FK_usuario ??
+              userObj?.id ??
+              userObj?.usuarioId ??
+              item?.usuarioId ??
+              item?.id;
+
+            const displayName =
+              userObj?.nome ??
+              userObj?.name ??
+              userObj?.email ??
+              item?.nome ??
+              item?.name ??
+              item?.email ??
+              `Usuário #${uid}`;
+
+            console.log("🔍 [TRACKFY DEBUG 4.2] Processando item:", {
+              uid,
+              currentUserId,
+              matchWithLoggedUser: String(uid) === String(currentUserId),
+              itemBruto: item,
+            });
+
+            // Adiciona se houver ID válido e não for o usuário logado
+            if (
+              uid !== undefined &&
+              uid !== null &&
+              String(uid) !== String(currentUserId)
+            ) {
+              usersMap.set(String(uid), {
+                ...item,
+                ...userObj,
+                id: uid,
+                displayName,
+              });
+            }
+          });
+        });
+
+        const finalUsersList = Array.from(usersMap.values());
+        console.log(
+          "✅ [TRACKFY DEBUG 5] Lista final de usuários para o Select:",
+          finalUsersList,
+        );
+
+        setAvailableUsers(finalUsersList);
+      } catch (err) {
+        console.error("❌ [TRACKFY DEBUG ERROR] Erro geral no useEffect:", err);
+      }
+    };
+
+    fetchClassesAndUsers();
+  }, []);
+
   const handleAddMember = () => {
-    const trimmedEmail = memberEmailInput.trim().toLowerCase();
+    if (!selectedUserId) return;
 
-    if (!trimmedEmail) return;
+    const userToAdd = availableUsers.find(
+      (u) => String(u.id) === String(selectedUserId),
+    );
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(trimmedEmail)) {
-      setErrorMessage("Por favor, insira um endereço de e-mail válido.");
+    if (!userToAdd) return;
+
+    if (invitedUsers.some((u) => String(u.id) === String(selectedUserId))) {
+      setErrorMessage("Este usuário já foi adicionado à lista.");
       return;
     }
 
-    if (invitedEmails.includes(trimmedEmail)) {
-      setErrorMessage("Este e-mail já foi adicionado à lista.");
-      return;
-    }
-
-    setInvitedEmails((prev) => [...prev, trimmedEmail]);
-    setMemberEmailInput("");
+    setInvitedUsers((prev) => [...prev, userToAdd]);
+    setSelectedUserId("");
     setErrorMessage(null);
   };
 
-  // Remover e-mail da lista
-  const handleRemoveMember = (emailToRemove: string) => {
-    setInvitedEmails((prev) => prev.filter((e) => e !== emailToRemove));
+  const handleRemoveMember = (userIdToRemove: number | string) => {
+    setInvitedUsers((prev) =>
+      prev.filter((u) => String(u.id) !== String(userIdToRemove)),
+    );
   };
 
-  // Envio do formulário
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
@@ -63,7 +218,6 @@ export default function CreateProjectPage() {
       return;
     }
 
-    // Tratamento seguro da data para o DateTime do Prisma
     const projectDate = new Date(`${term}T00:00:00.000Z`);
 
     if (isNaN(projectDate.getTime())) {
@@ -75,17 +229,41 @@ export default function CreateProjectPage() {
       setLoading(true);
 
       const token = Cookies.get("trackfy_token");
+      const rawUser = Cookies.get("trackfy_user");
+      let currentUserId: number | string | null = null;
+
+      if (rawUser) {
+        try {
+          const parsedUser = JSON.parse(rawUser);
+          currentUserId =
+            parsedUser.id ??
+            parsedUser.usuarioId ??
+            parsedUser.fkUsuario ??
+            parsedUser.FK_usuario ??
+            parsedUser.user?.id;
+        } catch (err) {
+          console.error("Erro ao converter trackfy_user:", err);
+        }
+      }
+
+      if (!currentUserId) {
+        setErrorMessage(
+          "Sessão inválida. Não foi possível obter o ID do usuário logado.",
+        );
+        setLoading(false);
+        return;
+      }
 
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-      // 1. Criar o Projeto -> Envia exatamente as chaves que o backend/Prisma espera
+      // 1. Criar o Projeto
       const projectResponse = await api.post(
         "/project",
         {
           title,
           description,
-          term: projectDate.toISOString(), // Converte para formato ISO compatível com DateTime
-          tokenGithub: tokenGithub || null, // Envia o token caso exista ou nulo
+          term: projectDate.toISOString(),
+          tokenGithub: tokenGithub || null,
         },
         { headers },
       );
@@ -93,15 +271,17 @@ export default function CreateProjectPage() {
       const createdProject = projectResponse.data;
       const projectId = createdProject?.id;
 
-      // 2. Se houver e-mails para convidar, cadastra os membros -> Chama POST /project/member
-      if (invitedEmails.length > 0 && projectId) {
+      // 2. Convida os membros selecionados
+      if (invitedUsers.length > 0 && projectId) {
         await Promise.all(
-          invitedEmails.map((email) =>
+          invitedUsers.map((targetUser) =>
             api.post(
               "/project/member",
               {
-                projectId,
-                email,
+                projectId: Number(projectId),
+                targetUserId: Number(targetUser.id),
+                usuarioId: Number(currentUserId),
+                funcaoId: 1,
               },
               { headers },
             ),
@@ -109,7 +289,6 @@ export default function CreateProjectPage() {
         );
       }
 
-      // Sucesso: Redireciona dinamicamente para a página do projeto recém-criado usando o ID
       if (projectId) {
         router.push(`/project/${projectId}`);
       } else {
@@ -129,7 +308,6 @@ export default function CreateProjectPage() {
   return (
     <div className={styles.overlay}>
       <div className={styles.modalContainer}>
-        {/* Botão Fechar / Voltar */}
         <button
           className={styles.closeButton}
           onClick={() => router.back()}
@@ -144,13 +322,11 @@ export default function CreateProjectPage() {
           Voltar para projetos
         </button>
 
-        {/* Cabeçalho */}
         <div className={styles.header}>
           <h2>Criar Novo Projeto</h2>
           <p>Preencha as informações para começar</p>
         </div>
 
-        {/* Formulário */}
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.fieldGroup}>
             <label htmlFor="title">
@@ -190,43 +366,44 @@ export default function CreateProjectPage() {
           </div>
 
           <div className={styles.fieldGroup}>
-            <label>CONVIDAR MEMBROS</label>
+            <label htmlFor="memberSelect">CONVIDAR MEMBROS DA SALA</label>
             <div className={styles.inviteRow}>
               <div className={styles.inputWrapper}>
-                <input
-                  type="email"
-                  placeholder="email@empresa.com"
-                  value={memberEmailInput}
-                  onChange={(e) => setMemberEmailInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleAddMember();
-                    }
-                  }}
-                />
+                <select
+                  id="memberSelect"
+                  value={selectedUserId}
+                  onChange={(e) => setSelectedUserId(e.target.value)}
+                >
+                  <option value="">Selecione um usuário...</option>
+                  {availableUsers.map((u: any) => (
+                    <option key={u.id} value={u.id}>
+                      {u.displayName}
+                    </option>
+                  ))}
+                </select>
               </div>
               <button
                 type="button"
                 className={styles.addButton}
                 onClick={handleAddMember}
+                disabled={!selectedUserId}
               >
                 Adicionar
               </button>
             </div>
 
-            {invitedEmails.length > 0 && (
+            {invitedUsers.length > 0 && (
               <div className={styles.tagsContainer}>
-                {invitedEmails.map((email) => (
-                  <div key={email} className={styles.tag}>
+                {invitedUsers.map((u: any) => (
+                  <div key={u.id} className={styles.tag}>
                     <span className={styles.avatarIcon}>
-                      {email.charAt(0).toUpperCase()}
+                      {u.displayName.charAt(0).toUpperCase()}
                     </span>
-                    <span>{email}</span>
+                    <span>{u.displayName}</span>
                     <button
                       type="button"
                       className={styles.removeBtn}
-                      onClick={() => handleRemoveMember(email)}
+                      onClick={() => handleRemoveMember(u.id)}
                     />
                   </div>
                 ))}
