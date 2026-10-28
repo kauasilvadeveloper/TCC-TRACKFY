@@ -65,3 +65,4 @@ export const ProfessorHeader: React.FC<ProfessorHeaderProps> = ({
     </section>
   );
 };
+

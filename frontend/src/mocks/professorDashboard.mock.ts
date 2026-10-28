@@ -29,3 +29,4 @@ export const initialProfessorTasksMock: ProfessorTask[] = [
     classId: 1,
   },
 ];
+

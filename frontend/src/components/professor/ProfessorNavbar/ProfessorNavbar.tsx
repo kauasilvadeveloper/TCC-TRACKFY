@@ -57,3 +57,4 @@ export const ProfessorNavbar: React.FC<ProfessorNavbarProps> = ({
     </header>
   );
 };
+

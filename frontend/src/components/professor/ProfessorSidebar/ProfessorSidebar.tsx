@@ -67,3 +67,4 @@ export const ProfessorSidebar: React.FC<ProfessorSidebarProps> = ({
     </aside>
   );
 };
+

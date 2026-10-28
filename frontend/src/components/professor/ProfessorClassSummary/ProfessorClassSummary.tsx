@@ -102,3 +102,4 @@ export const ProfessorClassSummary: React.FC<ProfessorClassSummaryProps> = ({
     </aside>
   );
 };
+

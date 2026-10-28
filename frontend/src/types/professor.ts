@@ -27,3 +27,4 @@ export interface ProfessorTask {
   fkSprint?: number;
   classId?: number;
 }
+

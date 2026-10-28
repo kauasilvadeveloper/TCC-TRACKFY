@@ -161,3 +161,4 @@ export const MyClassesModal: React.FC<MyClassesModalProps> = ({
     </div>
   );
 };
+
