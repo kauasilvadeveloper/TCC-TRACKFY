@@ -77,7 +77,7 @@ function mapApiToDashboardProject(
 }
 
 export function DashboardProvider({ children }: { children: ReactNode }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [projects, setProjects] = useState<DashboardProject[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -102,7 +102,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    console.log("isAuthenticated", isAuthenticated, "user", user);
+    if (!isAuthenticated) {
       fetchProjects();
     } else {
       setIsLoading(false);

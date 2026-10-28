@@ -24,11 +24,13 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     const token = Cookies.get("trackfy_token");
     if (token) {
+      setIsAuthenticated(true);
       api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     }
   }, []);
@@ -72,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, isAuthenticated: !!user, login, logout }}
+      value={{ user, isAuthenticated, login, logout }}
     >
       {children}
     </AuthContext.Provider>
