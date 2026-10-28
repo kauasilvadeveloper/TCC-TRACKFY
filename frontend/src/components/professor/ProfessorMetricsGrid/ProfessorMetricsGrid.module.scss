@@ -1,0 +1,145 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: var(--border-subtle);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  }
+}
+
+.cardHeader {
+  margin-bottom: 0.85rem;
+}
+
+.cardIcon {
+  font-size: 1.35rem;
+}
+
+.cardLabel {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+}
+
+.cardValue {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.1;
+  margin-bottom: 0.35rem;
+}
+
+.cardSub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+// Estilos temáticos dos Cards conforme o Figma
+.pendingCard {
+  .cardIcon {
+    color: #3b82f6;
+  }
+  .cardLabel {
+    color: #93c5fd;
+  }
+}
+
+.completedCard {
+  .cardIcon {
+    color: #10b981;
+  }
+  .cardLabel {
+    color: #6ee7b7;
+  }
+}
+
+.studentsCard {
+  .cardIcon {
+    color: #a855f7;
+  }
+  .cardLabel {
+    color: #d8b4fe;
+  }
+}
+
+.totalCard {
+  .cardIcon {
+    color: #f59e0b;
+  }
+  .cardLabel {
+    color: #fde68a;
+  }
+}
+
+// Skeleton loading
+.skeletonCard {
+  pointer-events: none;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+.skeletonIcon {
+  width: 24px;
+  height: 24px;
+  background-color: var(--bg-input);
+  border-radius: 6px;
+  margin-bottom: 0.85rem;
+}
+
+.skeletonLabel {
+  width: 90px;
+  height: 12px;
+  background-color: var(--bg-input);
+  border-radius: 4px;
+  margin-bottom: 0.6rem;
+}
+
+.skeletonValue {
+  width: 48px;
+  height: 36px;
+  background-color: var(--bg-input);
+  border-radius: 6px;
+  margin-bottom: 0.4rem;
+}
+
+.skeletonSub {
+  width: 120px;
+  height: 10px;
+  background-color: var(--bg-input);
+  border-radius: 4px;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
