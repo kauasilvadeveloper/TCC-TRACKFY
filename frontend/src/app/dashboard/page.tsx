@@ -17,12 +17,13 @@ import { DashboardCtaBanner } from "@/src/components/dashboard/DashboardCtaBanne
 import styles from "./page.module.scss";
 
 export default function DashboardPage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const router = useRouter();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
     const token = Cookies.get("trackfy_token");
+    console.log("IS AUTH?", isAuthenticated, user)
     if (!token && !isAuthenticated) {
       router.push("/");
     } else {

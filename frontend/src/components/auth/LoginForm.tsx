@@ -6,12 +6,14 @@ import { useAuth } from "@/src/context/AuthContext";
 import styles from "./LoginForm.module.scss";
 
 export function LoginForm() {
-  const { login } = useAuth();
+  const { login, user, isAuthenticated } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  console.log(user, isAuthenticated);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
