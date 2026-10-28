@@ -23,7 +23,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const token = Cookies.get("trackfy_token");
-    console.log("IS AUTH?", isAuthenticated, user)
+    console.log("IS AUTH?", isAuthenticated, "USER: ", user);
     if (!token && !isAuthenticated) {
       router.push("/");
     } else {

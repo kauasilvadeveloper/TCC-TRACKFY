@@ -49,8 +49,6 @@ export default function ProjectDashboardPage() {
 
       const token = Cookies.get("trackfy_token");
 
-      console.log(token);
-
       if (!token) {
         router.push("/");
         return;
@@ -62,7 +60,7 @@ export default function ProjectDashboardPage() {
 
         // 1. Busca os dados principais do projeto (Rota GET /project/:id válida no seu routes.ts)
         const projectRes = await api.get(`/project/${projectId}`, { headers });
-        console.log(projectRes);
+        console.log("RESPONSE GET PROJECT:", projectRes);
 
         setProject(projectRes.data);
 

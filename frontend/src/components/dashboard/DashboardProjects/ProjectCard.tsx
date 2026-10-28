@@ -12,7 +12,7 @@ interface ProjectCardProps {
 export function ProjectCard({ project }: ProjectCardProps) {
   return (
     <Link
-      href={`/projetos/${project.id}`}
+      href={`/project/${project.id}`}
       className={`${styles.projectCard} ${styles[project.corDestaque]}`}
     >
       <div className={styles.accentTopBar} />

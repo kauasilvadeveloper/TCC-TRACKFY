@@ -13,8 +13,6 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  console.log(user, isAuthenticated);
-
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
@@ -22,7 +20,7 @@ export function LoginForm() {
 
     try {
       await login({ email, password });
-      console.log("deu certo");
+      console.log("Usuário logado com sucesso");
     } catch (err: unknown) {
       // Captura a exceção tratada pelo interceptor do Axios
       if (err instanceof Error) {
