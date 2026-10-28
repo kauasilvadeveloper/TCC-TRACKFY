@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./page.module.scss";
 import { api } from "@/src/services/api";
+import Cookies from "js-cookie";
 
 export default function CreateProjectPage() {
   const router = useRouter();
@@ -13,7 +14,7 @@ export default function CreateProjectPage() {
   const [description, setDescription] = useState("");
   const [term, setTerm] = useState("");
   const [tokenGithub, setTokenGithub] = useState(""); // Opcional, caso tenha campo no form
-  
+
   const [memberEmailInput, setMemberEmailInput] = useState("");
   const [invitedEmails, setInvitedEmails] = useState<string[]>([]);
 
@@ -73,16 +74,21 @@ export default function CreateProjectPage() {
     try {
       setLoading(true);
 
-      const token = localStorage.getItem("@token") || localStorage.getItem("@session");
+      const token = Cookies.get("trackfy_token");
+
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
       // 1. Criar o Projeto -> Envia exatamente as chaves que o backend/Prisma espera
-      const projectResponse = await api.post("/project", {
-        title,
-        description,
-        term: projectDate.toISOString(), // Converte para formato ISO compatível com DateTime
-        tokenGithub: tokenGithub || null, // Envia o token caso exista ou nulo
-      }, { headers });
+      const projectResponse = await api.post(
+        "/project",
+        {
+          title,
+          description,
+          term: projectDate.toISOString(), // Converte para formato ISO compatível com DateTime
+          tokenGithub: tokenGithub || null, // Envia o token caso exista ou nulo
+        },
+        { headers },
+      );
 
       const createdProject = projectResponse.data;
       const projectId = createdProject?.id;
@@ -91,11 +97,15 @@ export default function CreateProjectPage() {
       if (invitedEmails.length > 0 && projectId) {
         await Promise.all(
           invitedEmails.map((email) =>
-            api.post("/project/member", {
-              projectId,
-              email,
-            }, { headers })
-          )
+            api.post(
+              "/project/member",
+              {
+                projectId,
+                email,
+              },
+              { headers },
+            ),
+          ),
         );
       }
 
@@ -109,7 +119,7 @@ export default function CreateProjectPage() {
       console.error("Erro ao criar projeto:", err);
       setErrorMessage(
         err.response?.data?.message ||
-        "Ocorreu um erro ao criar o projeto. Tente novamente."
+          "Ocorreu um erro ao criar o projeto. Tente novamente.",
       );
     } finally {
       setLoading(false);
@@ -224,7 +234,9 @@ export default function CreateProjectPage() {
             )}
           </div>
 
-          {errorMessage && <div className={styles.errorMessage}>{errorMessage}</div>}
+          {errorMessage && (
+            <div className={styles.errorMessage}>{errorMessage}</div>
+          )}
 
           <div className={styles.actions}>
             <button
