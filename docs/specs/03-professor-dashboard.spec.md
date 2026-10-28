@@ -10,13 +10,14 @@
 
 ## 1. Visão Geral e Objetivo
 
-A tela **Painel do Professor (Visão Geral)** destina-se ao corpo docente do Trackfy para acompanhar a evolução acadêmica e o progresso das entregas dos alunos de suas turmas.
+A tela **Painel do Professor (Visão Geral)** destina-se ao corpo docente do Trackfy para acompanhar a evolução acadêmica e o progresso das turmas.
 
 A página atua como uma central de monitoramento onde o professor pode:
 - Filtrar dados por turma ativa através de um seletor dinâmico no cabeçalho.
-- Analisar indicadores-chave de desempenho (KPIs) da turma: tarefas pendentes, tarefas concluídas, total de alunos e taxa de entrega.
-- Visualizar as tarefas recentes com status e taxas de adesão/entrega da turma.
-- Disparar ações sem sair da página através de **modais dedicados**: criação de tarefas (`+ Nova tarefa`), visualização expandida de tarefas (`Ver tarefas` / `Abrir lista de tarefas`) e gestão rápida de turmas (`Minhas Turmas`).
+- Analisar indicadores-chave da turma: tarefas pendentes, tarefas concluídas, total de alunos e total de tarefas cadastradas (sem cálculo de taxa de entrega).
+- Visualizar as tarefas com status real puxado do banco/modelo (`concluída`, `pendente` ou `em andamento`).
+- Visualizar as informações dos alunos da turma estritamente restritas a: **nome**, **email** e **sala** (derivados da relação `UsuarioSala`).
+- Disparar ações sem sair da página através de **modais dedicados**: criação de tarefas (`+ Nova tarefa`), visualização expandida de tarefas (`Ver tarefas` / `Abrir lista de tarefas`) e listagem/gestão de turmas e alunos (`Minhas Turmas`).
 
 ---
 
@@ -99,23 +100,23 @@ frontend/src/
   - **Botão `Ver tarefas`:** Botão secundário neutro ao lado do select, acionador do `TaskListModal` com foco na turma selecionada.
 
 ### 3.4 Grid de Métricas (`ProfessorMetricsGrid`)
-Grid responsivo contendo 4 cards de KPIs calculados com base na turma selecionada:
+Grid responsivo contendo 4 cards de métricas calculados com base na turma selecionada:
 1. **Tarefas Pendentes:**
    - Ícone: Caixa de seleção/prancheta azulada.
-   - Valor: Contador numérico (ex.: `2`).
+   - Valor: Contador numérico de tarefas com status "pendente" ou "em andamento".
    - Legenda: `exigem acompanhamento`.
 2. **Tarefas Concluídas:**
    - Ícone: Checkmark verde esmeralda.
-   - Valor: Contador numérico (ex.: `1`).
-   - Legenda: `entregas completas`.
+   - Valor: Contador numérico de tarefas com status "concluída".
+   - Legenda: `finalizadas`.
 3. **Alunos na Turma:**
    - Ícone: Grupo de pessoas roxo/lilás.
-   - Valor: Total de alunos matriculados na turma (ex.: `28`), derivado de `GET /class/:id/users`.
-   - Legenda: Turno ou detalhe da turma (ex.: `Manhã`).
-4. **Taxa de Entrega:**
-   - Ícone: Gráfico de barras âmbar/dourado.
-   - Valor: Percentual de conclusão da turma (ex.: `83%`).
-   - Legenda: `considerando as tarefas atuais`.
+   - Valor: Total de alunos matriculados na turma, derivado de `GET /class/:id/users`.
+   - Legenda: `alunos cadastrados`.
+4. **Total de Tarefas:**
+   - Ícone: Gráfico de barras / camadas azul royal.
+   - Valor: Total de tarefas cadastradas para a turma (sem cálculo de taxa de entrega).
+   - Legenda: `atividades registradas`.
 
 ### 3.5 Seção de Tarefas Recentes (`ProfessorRecentTasks`)
 - **Header:**
@@ -124,10 +125,10 @@ Grid responsivo contendo 4 cards de KPIs calculados com base na turma selecionad
   - Link de Ação: `Ver todas →` (aciona o `TaskListModal`).
 - **Lista de Itens:**
   - Cada item de tarefa possui:
-    - Indicador de status (bolinha verde para *"Em andamento"*, bolinha cinza/azul para *"Concluída"*).
+    - Indicador de status (bolinha verde para *"Em andamento"*, esmeralda para *"Concluída"*, âmbar para *"Pendente"*).
     - Título da Tarefa (ex.: *"Projeto Final — Interface Responsiva"*).
-    - Metadados: Data limite formatada (*"Prazo 05 Out 2026"*), proporção de entregas (*"18/28 entregues"*), percentual de adesão (*"64% da turma"*).
-    - Badge de Status: *"Em andamento"* (verde) ou *"Concluída"* (azul/cinza).
+    - Prazo formatado (ex.: *"Prazo 05 Out 2026"*).
+    - Badge de Status: Exibe estritamente o status real da tarefa puxado da API/modelo (`Concluída`, `Pendente` ou `Em andamento`).
 - **Controles de Paginação/Carrossel:**
   - Indicadores pontilhados no rodapé do card para alternar entre páginas de tarefas recentes.
 
@@ -135,9 +136,8 @@ Grid responsivo contendo 4 cards de KPIs calculados com base na turma selecionad
 - **Header:**
   - Título: `Resumo da turma`.
   - Subtítulo: `[Nome da Turma] · [Área/Curso]` (ex.: *Turma A · Desenvolvimento Web*).
-- **Barra de Progresso:**
-  - Rótulo `Entregas` com indicador percentual (ex.: `83%`).
-  - Barra de progresso horizontal (`progress bar`) com preenchimento em gradiente azul.
+- **Lista Rápida de Alunos da Turma:**
+  - Em conformidade estrita com a diretriz do usuário, exibe somente: **Nome**, **Email** e **Sala** (puxados da relação `UsuarioSala`).
 - **Card Interno de Ação Rápida (`Ação rápida`):**
   - Fundo sutilmente escurecido com borda suave.
   - Título: `Ação rápida`.
@@ -190,23 +190,18 @@ A regra técnica primordial é **NÃO alterar o backend Express**. Abaixo está 
 | :--- | :--- | :--- | :--- | :--- |
 | **Sessão / Docente** | Cookies / `useAuth()` | Client | **Real (API)** | Nome, email e cargo do professor autenticado via JWT |
 | **Turmas do Professor** | `/classes` | `GET` | **Real (API)** | Retorna `[{ id, anoEncerramento, _count: { usuarios } }]` |
-| **Alunos da Turma** | `/class/:id/users` | `GET` | **Real (API)** | Retorna lista de usuários vinculados à turma selecionada |
+| **Alunos da Turma** | `/class/:id/users` | `GET` | **Real (API)** | Exibe **apenas nome, email e sala** (puxados de `UsuarioSala`) |
+| **Status da Tarefa** | `/sprint/:id/tasks` ou `/task` | `GET/POST` | **Real (API/Modelo)** | Puxado do campo `status` da tarefa (`concluída`, `pendente` ou `em andamento`) |
 | **Criação de Tarefa** | `/task` | `POST` | **Real (API)** | Dispara cadastro no backend ao submeter o modal |
 | **Edição de Tarefa** | `/task/:id` | `PATCH` | **Real (API)** | Permite alterar prazo ou status no modal |
 | **Exclusão de Tarefa** | `/task/:id` | `DELETE` | **Real (API)** | Remove tarefa do sistema |
-| **Métricas da Turma** (Pendentes, Concluídas, Taxa %) | N/A | Local/Mock | **Mockado** | *Ver Justificativa 1 abaixo* |
-| **Taxa de Entrega de Alunos** (ex: "18/28 entregues") | N/A | Local/Mock | **Mockado** | *Ver Justificativa 2 abaixo* |
-| **Turno & Nome Fantasia** (ex: "Turma A", "Manhã") | N/A | Local/Mock | **Mockado** | *Ver Justificativa 3 abaixo* |
+| **Turno & Nome Fantasia** (ex: "Turma A", "Manhã") | N/A | Local/Format | **Apresentação** | O modelo `Sala` armazena apenas `id` e `anoEncerramento` |
 
-### Justificativas Técnicas para os Dados Mockados
+### Justificativas Técnicas e Regras dos Dados
 
-1. **Ausência de Vínculo Direto entre Turma (`Sala`) e `Projeto` / `Tarefa` no Banco:**
-   - No schema do banco (`schema.prisma`), a entidade `Sala` relaciona-se exclusivamente com a pivot `UsuarioSala`. Não existe chave estrangeira ou relacionamento entre `Sala` e `Projeto`, nem entre `Sala` e `Tarefa`.
-   - Por este motivo, o backend não possui um endpoint como `GET /class/:id/metrics` ou `GET /class/:id/tasks`. As métricas agregadas (*Tarefas Pendentes*, *Tarefas Concluídas*, *Taxa de Entrega 83%*) serão geradas via mock estruturado em `src/mocks/professorDashboard.mock.ts` mapeado pelo `classId`.
-2. **Inexistência de Tabela de Submissões/Entregas Coletivas:**
-   - A entidade `Tarefa` no banco possui apenas `status`, `prazoTarefa`, `fkColuna` e `fkSprint`. Não existe um modelo relacional de "Entrega de Tarefa por Aluno" que permita computar quantos alunos de uma turma de 28 pessoas já submeteram a atividade (ex.: *"18/28 entregues"*). Essa informação analítica será provida pelo mock tipado.
-3. **Atributos de Apresentação da Turma:**
-   - No Prisma, o modelo `Sala` armazena apenas `id: Int` e `anoEncerramento: Int`. Nome fantasia (ex.: *"Turma A - Desenvolvimento Web"*) e turno (*"Manhã"*) serão gerados via camada de formatação/mock no frontend para enriquecer a experiência visual apresentada no Figma.
+1. **Exclusão de Taxa de Entrega de Tarefas:** Conforme instruído pelo usuário, não há exibição de taxa de entrega de tarefas (porcentagens de entregas por aluno foram suprimidas da interface).
+2. **Status Real das Tarefas:** O status exibido nos cards e na lista de tarefas recentes reflete fielmente o valor do atributo `status` da entidade `Tarefa` (`concluída`, `pendente` ou `em andamento`), permitindo filtragem precisa de tarefas pendentes e concluídas.
+3. **Dados Estritos dos Alunos:** Qualquer componente que liste os alunos da turma selecionada exibe exclusivamente: **nome**, **email** e **sala** (obtidos através do relacionamento `UsuarioSala`).
 
 ---
 
@@ -274,3 +269,4 @@ A interface deve cobrir com clareza três cenários de vazio:
 - [ ] **Empty States Claros:** Mensagens explícitas de dados vazios para ausência de turmas, alunos ou tarefas.
 - [ ] **Fidelidade Visual ao Figma:** Cores, tipografia, contraste do tema escuro, bordas arredondadas e badges idênticos ao layout fornecido.
 - [ ] **Versionamento Git:** Modificações commitadas na branch `feat/professor-dashboard`.
+
