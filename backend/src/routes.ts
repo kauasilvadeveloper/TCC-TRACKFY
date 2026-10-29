@@ -113,7 +113,11 @@ router.get(
   isAuthenticated,
   new GetGithubBranchesController().handle,
 );
-router.get("/project/:projectId/:branchName/commits", isAuthenticated, new GetGithubCommitsController().handle
+
+router.get(
+  "/project/:projectId/:branchName/commits",
+  isAuthenticated,
+  new GetGithubCommitsController().handle,
 );
 
 // ================= KANBAN & COLUNAS =================

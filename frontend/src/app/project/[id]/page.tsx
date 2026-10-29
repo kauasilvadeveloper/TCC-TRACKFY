@@ -25,6 +25,9 @@ import {
   FiLock,
   FiChevronRight,
   FiEdit2,
+  FiGitCommit,
+  FiUser,
+  FiGitBranch,
 } from "react-icons/fi";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -496,6 +499,67 @@ export default function ProjectDashboardPage() {
         ? `O prazo não pode ultrapassar o prazo da sprint (${formatDate(max)}).`
         : null,
     );
+  };
+
+  // Estados
+  const [branches, setBranches] = useState<string[]>([]);
+  const [selectedBranch, setSelectedBranch] = useState<string>("");
+  const [commits, setCommits] = useState<any[]>([]);
+  const [loadingBranches, setLoadingBranches] = useState<boolean>(false);
+  const [loadingCommits, setLoadingCommits] = useState<boolean>(false);
+
+  // Busca as branches ao abrir o modal
+  useEffect(() => {
+    async function loadBranches() {
+      if (!isTaskDetailOpen || !projectId) return;
+
+      try {
+        setLoadingBranches(true);
+
+        const response = await api.get("/project/github/branches", {
+          params: { projectId: String(projectId) },
+          headers: authHeaders(),
+        });
+
+        const data = response.data;
+        const list = Array.isArray(data)
+          ? data.map((b: any) => (typeof b === "string" ? b : b.name))
+          : data?.branches || [];
+
+        setBranches(list);
+      } catch (err) {
+        console.error("Erro ao buscar branches:", err);
+      } finally {
+        setLoadingBranches(false);
+      }
+    }
+
+    loadBranches();
+  }, [isTaskDetailOpen, projectId]);
+  // 1. Declara os estados para a branch e para os commits
+
+  // 2. Declara a função handleBranchChange
+  const handleBranchChange = async (branchName: string) => {
+    setSelectedBranch(branchName);
+    setCommits([]);
+
+    if (!branchName) return;
+
+    try {
+      setLoadingCommits(true);
+      const response = await api.get(
+        `/project/${projectId}/${branchName}/commits`,
+        { headers: authHeaders() },
+      );
+
+      const data = response.data;
+      const commitList = Array.isArray(data) ? data : data?.commits || [];
+      setCommits(commitList);
+    } catch (err) {
+      console.error("Erro ao procurar commits:", err);
+    } finally {
+      setLoadingCommits(false);
+    }
   };
 
   const handleUpdateTask = async (e: React.FormEvent) => {
@@ -1600,7 +1664,7 @@ export default function ProjectDashboardPage() {
               </button>
             </div>
 
-            {/* Details */}
+            {/* Details Tab */}
             {taskDetailTab === "details" && (
               <form onSubmit={handleUpdateTask} className={styles.modalForm}>
                 <div className={styles.formGroup}>
@@ -1613,6 +1677,7 @@ export default function ProjectDashboardPage() {
                     required
                   />
                 </div>
+
                 <div className={styles.formGroup}>
                   <label className={styles.label}>Descrição</label>
                   <textarea
@@ -1622,6 +1687,7 @@ export default function ProjectDashboardPage() {
                     onChange={(e) => setEditTaskDesc(e.target.value)}
                   />
                 </div>
+
                 <div className={styles.formRow}>
                   <div className={styles.formGroup}>
                     <label className={styles.label}>
@@ -1650,6 +1716,7 @@ export default function ProjectDashboardPage() {
                       </span>
                     )}
                   </div>
+
                   <div className={styles.formGroup}>
                     <label className={styles.label}>Stack</label>
                     <select
@@ -1666,6 +1733,116 @@ export default function ProjectDashboardPage() {
                     </select>
                   </div>
                 </div>
+
+                {/* Integração GitHub: Seleção de Branch e Commit */}
+                {/* ─── Seleção de Branch (Largura Total) ─────────────────── */}
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>
+                    <FiGitBranch
+                      style={{ marginRight: "6px", verticalAlign: "middle" }}
+                    />
+                    Branch (GitHub)
+                  </label>
+                  <select
+                    className={styles.select}
+                    value={selectedBranch}
+                    onChange={(e) => handleBranchChange(e.target.value)}
+                    disabled={loadingBranches}
+                  >
+                    <option value="">
+                      {loadingBranches
+                        ? "Carregando branches..."
+                        : "Selecione uma branch..."}
+                    </option>
+                    {branches.map((branch) => (
+                      <option key={branch} value={branch}>
+                        {branch}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* ─── Lista de Commits (Abaixo da Branch) ─────────────────── */}
+                <div className={styles.formGroup}>
+                  <div className={styles.commitsHeaderRow}>
+                    <label className={styles.label} style={{ marginBottom: 0 }}>
+                      <FiGitCommit
+                        style={{ marginRight: "6px", verticalAlign: "middle" }}
+                      />
+                      Histórico de Commits
+                    </label>
+                    {selectedBranch && (
+                      <span className={styles.branchBadge}>
+                        {selectedBranch} ({commits.length})
+                      </span>
+                    )}
+                  </div>
+
+                  {!selectedBranch ? (
+                    <div className={styles.emptyCommitsState}>
+                      <FiGitBranch size={22} color="#64748b" />
+                      <p>
+                        Selecione uma branch acima para visualizar os commits.
+                      </p>
+                    </div>
+                  ) : loadingCommits ? (
+                    <div className={styles.emptyCommitsState}>
+                      <p>Carregando histórico de commits...</p>
+                    </div>
+                  ) : commits.length === 0 ? (
+                    <div className={styles.emptyCommitsState}>
+                      <p>Nenhum commit encontrado nesta branch.</p>
+                    </div>
+                  ) : (
+                    <div className={styles.commitsContainer}>
+                      {commits.map((c: any, index: number) => {
+                        const sha = c.sha || c.id || "";
+                        const shortSha = sha.substring(0, 7);
+                        const message =
+                          c.commit?.message || c.message || "Sem mensagem";
+                        const author =
+                          c.commit?.author?.name ||
+                          c.author?.login ||
+                          c.commit?.committer?.name ||
+                          "Autor desconhecido";
+                        const rawDate =
+                          c.commit?.author?.date || c.commit?.committer?.date;
+                        const dateFormatted = rawDate
+                          ? new Date(rawDate).toLocaleDateString("pt-BR", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "2-digit",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "";
+
+                        return (
+                          <div key={sha || index} className={styles.commitCard}>
+                            <div className={styles.commitCardHeader}>
+                              <span className={styles.commitShaBadge}>
+                                <FiGitCommit size={12} /> {shortSha}
+                              </span>
+                              {dateFormatted && (
+                                <span className={styles.commitDate}>
+                                  <FiCalendar size={11} /> {dateFormatted}
+                                </span>
+                              )}
+                            </div>
+
+                            <p className={styles.commitMessage}>{message}</p>
+
+                            <div className={styles.commitAuthor}>
+                              <FiUser size={12} />
+                              <span>{author}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
                 <div className={styles.formRow}>
                   <div className={styles.formGroup}>
                     <label className={styles.label}>Status</label>
@@ -1679,6 +1856,7 @@ export default function ProjectDashboardPage() {
                       <option>Concluída</option>
                     </select>
                   </div>
+
                   <div className={styles.formGroup}>
                     <label className={styles.label}>
                       Sprint
@@ -1707,6 +1885,7 @@ export default function ProjectDashboardPage() {
                     </select>
                   </div>
                 </div>
+
                 {projectMembers.length > 0 && (
                   <div className={styles.formGroup}>
                     <label className={styles.label}>Membros Responsáveis</label>
@@ -1730,6 +1909,7 @@ export default function ProjectDashboardPage() {
                     </div>
                   </div>
                 )}
+
                 {deleteConfirmOpen && (
                   <div className={styles.deleteConfirm}>
                     <p>Tem certeza? Esta ação não pode ser desfeita.</p>
@@ -1751,6 +1931,7 @@ export default function ProjectDashboardPage() {
                     </div>
                   </div>
                 )}
+
                 <div className={styles.modalFooter}>
                   <button
                     type="button"
@@ -1765,7 +1946,7 @@ export default function ProjectDashboardPage() {
                     className={styles.submitBtn}
                     disabled={isSubmittingTaskEdit || !!editTaskDateErr}
                   >
-                    <FiCheck />{" "}
+                    <FiCheck />
                     <span>
                       {isSubmittingTaskEdit
                         ? "Salvando..."
@@ -1776,7 +1957,7 @@ export default function ProjectDashboardPage() {
               </form>
             )}
 
-            {/* Comments */}
+            {/* Comments Tab */}
             {taskDetailTab === "comments" && (
               <div className={styles.commentsTab}>
                 <div className={styles.commentsList}>
@@ -1805,6 +1986,7 @@ export default function ProjectDashboardPage() {
                     )
                   )}
                 </div>
+
                 {isProfessor ? (
                   <form
                     onSubmit={handleCreateComment}
@@ -1826,7 +2008,7 @@ export default function ProjectDashboardPage() {
                         className={styles.submitBtn}
                         disabled={isSubmittingComment || !newComment.trim()}
                       >
-                        <FiMessageSquare />{" "}
+                        <FiMessageSquare />
                         <span>
                           {isSubmittingComment ? "Enviando..." : "Comentar"}
                         </span>
