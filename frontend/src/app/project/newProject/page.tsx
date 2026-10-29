@@ -77,7 +77,11 @@ export default function CreateProjectPage() {
 
           const rawMembers: any[] = Array.isArray(res.data)
             ? res.data
-            : res.data.users || res.data.usuarios || res.data.alunos || res.data.members || [];
+            : res.data.users ||
+            res.data.usuarios ||
+            res.data.alunos ||
+            res.data.members ||
+            [];
 
           console.log(`🔍 [TRACKFY DEBUG 4.1] Lista bruta de membros da sala ${classId}:`, rawMembers);
 
