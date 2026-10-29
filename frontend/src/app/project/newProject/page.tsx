@@ -36,53 +36,29 @@ export default function CreateProjectPage() {
         if (rawUser) {
           try {
             const parsed = JSON.parse(rawUser);
-            currentUserId =
-              parsed.id ??
-              parsed.usuarioId ??
-              parsed.fkUsuario ??
-              parsed.FK_usuario ??
-              parsed.user?.id;
-            console.log(
-              "🔍 [TRACKFY DEBUG 1.1] User retornado do cookie:",
-              parsed,
-            );
-            console.log(
-              "🔍 [TRACKFY DEBUG 1.2] ID do Usuário Logado Extraído:",
-              currentUserId,
-            );
+            currentUserId = parsed.id ?? parsed.usuarioId ?? parsed.fkUsuario ?? parsed.FK_usuario ?? parsed.user?.id;
+            console.log("🔍 [TRACKFY DEBUG 1.1] User retornado do cookie:", parsed);
+            console.log("🔍 [TRACKFY DEBUG 1.2] ID do Usuário Logado Extraído:", currentUserId);
           } catch (e) {
-            console.error(
-              "❌ [TRACKFY DEBUG ERROR] Erro ao decodificar trackfy_user:",
-              e,
-            );
+            console.error("❌ [TRACKFY DEBUG ERROR] Erro ao decodificar trackfy_user:", e);
           }
         }
 
         // 1. Busca as salas associadas ao usuário
         const response = await api.get("/classes", { headers });
-        console.log(
-          "🔍 [TRACKFY DEBUG 2] Resposta GET /classes:",
-          response.data,
-        );
+        console.log("🔍 [TRACKFY DEBUG 2] Resposta GET /classes:", response.data);
 
         const classes = Array.isArray(response.data) ? response.data : [];
 
         if (classes.length === 0) {
-          console.warn(
-            "⚠️ [TRACKFY DEBUG 2.1] Nenhuma sala encontrada na requisição /classes.",
-          );
+          console.warn("⚠️ [TRACKFY DEBUG 2.1] Nenhuma sala encontrada na requisição /classes.");
         }
 
         // 2. Busca os alunos de cada sala pela rota /class/:id/users
         const userPromises = classes.map((cls: any) => {
-          console.log(
-            `🔍 [TRACKFY DEBUG 3] Disparando GET /class/${cls.id}/users...`,
-          );
+          console.log(`🔍 [TRACKFY DEBUG 3] Disparando GET /class/${cls.id}/users...`);
           return api.get(`/class/${cls.id}/users`, { headers }).catch((err) => {
-            console.error(
-              `❌ [TRACKFY DEBUG ERROR] Erro ao buscar /class/${cls.id}/users:`,
-              err.response || err,
-            );
+            console.error(`❌ [TRACKFY DEBUG ERROR] Erro ao buscar /class/${cls.id}/users:`, err.response || err);
             return null;
           });
         });
@@ -93,29 +69,17 @@ export default function CreateProjectPage() {
         responses.forEach((res, index) => {
           const classId = classes[index]?.id;
           if (!res || !res.data) {
-            console.warn(
-              `⚠️ [TRACKFY DEBUG 4] Sem resposta válida para sala ID ${classId}`,
-            );
+            console.warn(`⚠️ [TRACKFY DEBUG 4] Sem resposta válida para sala ID ${classId}`);
             return;
           }
 
-          console.log(
-            `🔍 [TRACKFY DEBUG 4] Resposta de /class/${classId}/users:`,
-            res.data,
-          );
+          console.log(`🔍 [TRACKFY DEBUG 4] Resposta de /class/${classId}/users:`, res.data);
 
           const rawMembers: any[] = Array.isArray(res.data)
             ? res.data
-            : res.data.users ||
-              res.data.usuarios ||
-              res.data.alunos ||
-              res.data.members ||
-              [];
+            : res.data.users || res.data.usuarios || res.data.alunos || res.data.members || [];
 
-          console.log(
-            `🔍 [TRACKFY DEBUG 4.1] Lista bruta de membros da sala ${classId}:`,
-            rawMembers,
-          );
+          console.log(`🔍 [TRACKFY DEBUG 4.1] Lista bruta de membros da sala ${classId}:`, rawMembers);
 
           rawMembers.forEach((item) => {
             const userObj = item.usuario || item.user || item.aluno || item;
@@ -165,10 +129,7 @@ export default function CreateProjectPage() {
         });
 
         const finalUsersList = Array.from(usersMap.values());
-        console.log(
-          "✅ [TRACKFY DEBUG 5] Lista final de usuários para o Select:",
-          finalUsersList,
-        );
+        console.log("✅ [TRACKFY DEBUG 5] Lista final de usuários para o Select:", finalUsersList);
 
         setAvailableUsers(finalUsersList);
       } catch (err) {
@@ -182,9 +143,7 @@ export default function CreateProjectPage() {
   const handleAddMember = () => {
     if (!selectedUserId) return;
 
-    const userToAdd = availableUsers.find(
-      (u) => String(u.id) === String(selectedUserId),
-    );
+    const userToAdd = availableUsers.find((u) => String(u.id) === String(selectedUserId));
 
     if (!userToAdd) return;
 
@@ -199,9 +158,7 @@ export default function CreateProjectPage() {
   };
 
   const handleRemoveMember = (userIdToRemove: number | string) => {
-    setInvitedUsers((prev) =>
-      prev.filter((u) => String(u.id) !== String(userIdToRemove)),
-    );
+    setInvitedUsers((prev) => prev.filter((u) => String(u.id) !== String(userIdToRemove)));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -235,21 +192,14 @@ export default function CreateProjectPage() {
       if (rawUser) {
         try {
           const parsedUser = JSON.parse(rawUser);
-          currentUserId =
-            parsedUser.id ??
-            parsedUser.usuarioId ??
-            parsedUser.fkUsuario ??
-            parsedUser.FK_usuario ??
-            parsedUser.user?.id;
+          currentUserId = parsedUser.id ?? parsedUser.usuarioId ?? parsedUser.fkUsuario ?? parsedUser.FK_usuario ?? parsedUser.user?.id;
         } catch (err) {
           console.error("Erro ao converter trackfy_user:", err);
         }
       }
 
       if (!currentUserId) {
-        setErrorMessage(
-          "Sessão inválida. Não foi possível obter o ID do usuário logado.",
-        );
+        setErrorMessage("Sessão inválida. Não foi possível obter o ID do usuário logado.");
         setLoading(false);
         return;
       }
@@ -270,6 +220,17 @@ export default function CreateProjectPage() {
 
       const createdProject = projectResponse.data;
       const projectId = createdProject?.id;
+
+      api.post(
+        "/project/member",
+        {
+          projectId: Number(projectId),
+          targetUserId: Number(currentUserId),
+          usuarioId: Number(currentUserId),
+          funcaoId: 1,
+        },
+        { headers },
+      )
 
       // 2. Convida os membros selecionados
       if (invitedUsers.length > 0 && projectId) {
@@ -298,7 +259,7 @@ export default function CreateProjectPage() {
       console.error("Erro ao criar projeto:", err);
       setErrorMessage(
         err.response?.data?.message ||
-          "Ocorreu um erro ao criar o projeto. Tente novamente.",
+        "Ocorreu um erro ao criar o projeto. Tente novamente.",
       );
     } finally {
       setLoading(false);
