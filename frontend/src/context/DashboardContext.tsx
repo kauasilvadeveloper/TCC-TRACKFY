@@ -28,7 +28,7 @@ interface DashboardContextType {
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(
-  undefined
+  undefined,
 );
 
 const ACCENT_COLORS: AccentColor[] = ["blue", "purple", "green", "orange"];
@@ -55,7 +55,7 @@ function formatDate(dateStr: string): string {
 
 function mapApiToDashboardProject(
   apiProj: ApiProjeto,
-  index: number
+  index: number,
 ): DashboardProject {
   const defaultProgresses = [74, 45, 88, 21];
 
@@ -77,7 +77,7 @@ function mapApiToDashboardProject(
 }
 
 export function DashboardProvider({ children }: { children: ReactNode }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [projects, setProjects] = useState<DashboardProject[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -102,7 +102,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (!!isAuthenticated) {
       fetchProjects();
     } else {
       setIsLoading(false);
@@ -139,7 +139,7 @@ export const useDashboard = (): DashboardContextType => {
   const context = useContext(DashboardContext);
   if (!context) {
     throw new Error(
-      "useDashboard deve ser utilizado dentro de um DashboardProvider."
+      "useDashboard deve ser utilizado dentro de um DashboardProvider.",
     );
   }
   return context;

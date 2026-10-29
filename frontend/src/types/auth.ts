@@ -4,7 +4,7 @@ export interface User {
     email: string;
     name?: string;
     role: string;
-  }
+  };
 }
 
 export interface LoginCredentials {
@@ -16,5 +16,5 @@ export interface AuthResponse {
   login: {
     token: string;
     user: User;
-  }
+  };
 }

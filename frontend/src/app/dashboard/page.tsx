@@ -17,7 +17,7 @@ import { DashboardCtaBanner } from "@/src/components/dashboard/DashboardCtaBanne
 import styles from "./page.module.scss";
 
 export default function DashboardPage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const router = useRouter();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
