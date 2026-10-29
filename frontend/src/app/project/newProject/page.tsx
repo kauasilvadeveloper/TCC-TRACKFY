@@ -107,10 +107,10 @@ export default function CreateProjectPage() {
           const rawMembers: any[] = Array.isArray(res.data)
             ? res.data
             : res.data.users ||
-              res.data.usuarios ||
-              res.data.alunos ||
-              res.data.members ||
-              [];
+            res.data.usuarios ||
+            res.data.alunos ||
+            res.data.members ||
+            [];
 
           console.log(
             `🔍 [TRACKFY DEBUG 4.1] Lista bruta de membros da sala ${classId}:`,
@@ -298,7 +298,7 @@ export default function CreateProjectPage() {
       console.error("Erro ao criar projeto:", err);
       setErrorMessage(
         err.response?.data?.message ||
-          "Ocorreu um erro ao criar o projeto. Tente novamente.",
+        "Ocorreu um erro ao criar o projeto. Tente novamente.",
       );
     } finally {
       setLoading(false);
