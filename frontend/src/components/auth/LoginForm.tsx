@@ -4,10 +4,9 @@
 import { useState, FormEvent } from "react";
 import { useAuth } from "@/src/context/AuthContext";
 import styles from "./LoginForm.module.scss";
-import axios from "axios";
 
 export function LoginForm() {
-  const { login } = useAuth();
+  const { login, user, isAuthenticated } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,7 +20,7 @@ export function LoginForm() {
 
     try {
       await login({ email, password });
-      console.log("deu certo");
+      console.log("Usuário logado com sucesso");
     } catch (err: unknown) {
       // Captura a exceção tratada pelo interceptor do Axios
       if (err instanceof Error) {

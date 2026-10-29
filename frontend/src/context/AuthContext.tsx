@@ -24,12 +24,25 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     const token = Cookies.get("trackfy_token");
+    const storedUser = Cookies.get("trackfy_user");
+
     if (token) {
       api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      setIsAuthenticated(true);
+
+      // Restaura o usuário salvo no cookie caso exista
+      if (storedUser) {
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch {
+          setUser(null);
+        }
+      }
     }
   }, []);
 
@@ -38,18 +51,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     redirectTo: string = "/dashboard",
   ): Promise<void> => {
     try {
-      const { token, user: userData } = await authService.login(credentials);
+      const response = await authService.login(credentials);
+      const { token, user: userData } = response.login;
 
+      // Salva o token e o objeto user nos cookies
       Cookies.set("trackfy_token", token, {
         expires: 7,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
       });
 
-      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-      setUser(userData);
+      Cookies.set("trackfy_user", JSON.stringify(userData), {
+        expires: 7,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+      });
 
-      // Redirecionamento programático após autenticação com sucesso
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+      // Atualiza os estados no contexto
+      setUser(userData);
+      setIsAuthenticated(true);
+
+      // Redireciona para a página desejada
       router.push(redirectTo);
     } catch (error: unknown) {
       console.error("[AuthService] Falha na autenticação:", error);
@@ -59,17 +83,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = (redirectTo: string = "/login") => {
     Cookies.remove("trackfy_token");
+    Cookies.remove("trackfy_user");
     delete api.defaults.headers.common["Authorization"];
-    setUser(null);
 
-    // Redirecionamento programático após encerramento da sessão
+    setUser(null);
+    setIsAuthenticated(false);
+
     router.push(redirectTo);
   };
 
   return (
-    <AuthContext.Provider
-      value={{ user, isAuthenticated: !!user, login, logout }}
-    >
+    <AuthContext.Provider value={{ user, isAuthenticated, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
