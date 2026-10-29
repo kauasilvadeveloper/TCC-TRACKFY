@@ -14,7 +14,7 @@ interface ProfessorSidebarProps {
 
 export const ProfessorSidebar: React.FC<ProfessorSidebarProps> = ({
   professorName,
-  subjectName = "Desenvolvimento Web",
+  subjectName = "Desenvolvimento de Sistemas",
   taskCount,
   onOpenTasksModal,
   onOpenClassesModal,
