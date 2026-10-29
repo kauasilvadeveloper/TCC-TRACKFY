@@ -28,8 +28,10 @@ export class CreateUserService {
     const validDomains = [
       "@aluno.senai.br",
       "@docente.senai.br",
+      "@coordenador.senai.br",
       "@portalsesisp.org.br",
     ];
+
     const hasValidDomain = validDomains.some((domain) =>
       email.endsWith(domain),
     );
