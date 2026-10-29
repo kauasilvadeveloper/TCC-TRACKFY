@@ -42,6 +42,7 @@ import { CreateSprintController } from "./controllers/sprint/CreateSprintControl
 import { GetTasksBySprintController } from "./controllers/sprint/GetTasksBySprintController";
 import { ReopenSprintController } from "./controllers/sprint/ReopenSprintController";
 import { UpdateSprintController } from "./controllers/sprint/UpdateSprintController";
+import { GetGithubCommitsController } from "./controllers/project/GetGithubCommitsController";
 // import { GetSprintsByProjectController } from "./controllers/sprint/GetSprintByProjectController";
 
 const router = Router();
@@ -111,6 +112,8 @@ router.get(
   "/project/github/branches",
   isAuthenticated,
   new GetGithubBranchesController().handle,
+);
+router.get("/project/:projectId/:branchName/commits", isAuthenticated, new GetGithubCommitsController().handle
 );
 
 // ================= KANBAN & COLUNAS =================
