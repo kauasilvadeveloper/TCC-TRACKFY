@@ -10,6 +10,8 @@ import {
   FiCheckCircle,
   FiClock,
   FiInbox,
+  FiMessageSquare,
+  FiEdit2,
 } from "react-icons/fi";
 import { ProfessorTask } from "@/src/types/professor";
 
@@ -21,6 +23,7 @@ interface TaskListModalProps {
   onOpenCreateTask: () => void;
   onToggleStatus: (taskId: number) => void;
   onDeleteTask: (taskId: number) => void;
+  onOpenTaskDetails?: (task: ProfessorTask) => void;
 }
 
 export const TaskListModal: React.FC<TaskListModalProps> = ({
@@ -31,6 +34,7 @@ export const TaskListModal: React.FC<TaskListModalProps> = ({
   onOpenCreateTask,
   onToggleStatus,
   onDeleteTask,
+  onOpenTaskDetails,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState<
@@ -191,6 +195,7 @@ export const TaskListModal: React.FC<TaskListModalProps> = ({
                 const isDone =
                   task.status.toLowerCase().includes("conclu") ||
                   task.status === "done";
+                const commentCount = task.comentarios?.length || 0;
 
                 return (
                   <div key={task.id} className={styles.taskCard}>
@@ -237,11 +242,35 @@ export const TaskListModal: React.FC<TaskListModalProps> = ({
                         <div className={styles.taskMetaRow}>
                           <span>Prazo: {formatDate(task.prazoTarefa)}</span>
                           {task.stack && <span>· Stack: {task.stack}</span>}
+                          {task.projectTitle && (
+                            <span>· Projeto: {task.projectTitle}</span>
+                          )}
+                          {commentCount > 0 && (
+                            <span className={styles.commentsBadgeSmall}>
+                              <FiMessageSquare /> {commentCount}{" "}
+                              {commentCount === 1 ? "comentário" : "comentários"}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
 
                     <div className={styles.taskCardRight}>
+                      {onOpenTaskDetails && (
+                        <button
+                          type="button"
+                          className={styles.detailsBtn}
+                          onClick={() => {
+                            onClose();
+                            onOpenTaskDetails(task);
+                          }}
+                          title="Editar prazo e comentar na tarefa"
+                        >
+                          <FiEdit2 />
+                          <span>Prazo & Feedback</span>
+                        </button>
+                      )}
+
                       <button
                         type="button"
                         className={styles.deleteBtn}
@@ -261,4 +290,3 @@ export const TaskListModal: React.FC<TaskListModalProps> = ({
     </div>
   );
 };
-

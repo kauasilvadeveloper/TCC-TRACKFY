@@ -1,9 +1,15 @@
 export interface User {
-  user: {
+  id?: string;
+  email?: string;
+  name?: string;
+  role?: string;
+  cargoEscola?: string;
+  user?: {
     id: string;
     email: string;
     name?: string;
     role: string;
+    cargoEscola?: string;
   };
 }
 
