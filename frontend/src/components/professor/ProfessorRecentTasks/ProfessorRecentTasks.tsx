@@ -9,6 +9,7 @@ interface ProfessorRecentTasksProps {
   tasks: ProfessorTask[];
   onOpenTasksModal: () => void;
   onOpenCreateTask: () => void;
+  onOpenTaskDetails?: (task: ProfessorTask) => void;
   loading?: boolean;
 }
 
@@ -16,6 +17,7 @@ export const ProfessorRecentTasks: React.FC<ProfessorRecentTasksProps> = ({
   tasks,
   onOpenTasksModal,
   onOpenCreateTask,
+  onOpenTaskDetails,
   loading = false,
 }) => {
   const [currentPage, setCurrentPage] = useState(0);
@@ -110,16 +112,24 @@ export const ProfessorRecentTasks: React.FC<ProfessorRecentTasksProps> = ({
           {displayedTasks.map((task) => {
             const statusClass = getStatusClass(task.status);
             const statusLabel = getStatusLabel(task.status);
+            const commentCount = task.comentarios?.length || 0;
 
             return (
-              <div key={task.id} className={styles.taskItem}>
+              <div
+                key={task.id}
+                className={styles.taskItem}
+                onClick={() => onOpenTaskDetails && onOpenTaskDetails(task)}
+                style={{ cursor: onOpenTaskDetails ? "pointer" : "default" }}
+                title={onOpenTaskDetails ? "Clique para gerenciar prazo e ver feedbacks" : undefined}
+              >
                 <div className={styles.leftInfo}>
                   <span className={`${styles.statusDot} ${statusClass}`} />
                   <div className={styles.titleAndMeta}>
                     <h4 className={styles.taskTitle}>{task.tituloTarefa}</h4>
                     <span className={styles.taskMeta}>
                       Prazo {formatDate(task.prazoTarefa)}
-                      {task.stack && ` · Stack: ${task.stack}`}
+                      {task.stack && ` · ${task.stack}`}
+                      {commentCount > 0 && ` · ${commentCount} comentários`}
                     </span>
                   </div>
                 </div>
@@ -156,4 +166,3 @@ export const ProfessorRecentTasks: React.FC<ProfessorRecentTasksProps> = ({
     </div>
   );
 };
-
