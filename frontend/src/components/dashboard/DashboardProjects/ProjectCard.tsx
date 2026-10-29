@@ -47,9 +47,9 @@ export function ProjectCard({ project }: ProjectCardProps) {
           </div>
 
           <div className={styles.avatarStack} aria-label="Membros da equipe">
-            {project.membros.map((membro) => (
+            {project.membros.map((membro, index) => (
               <div
-                key={membro.id}
+                key={`${membro.id}-${index}`}
                 className={styles.memberAvatar}
                 title={membro.nome}
               >
