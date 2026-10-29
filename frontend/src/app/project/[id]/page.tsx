@@ -804,6 +804,7 @@ export default function ProjectDashboardPage() {
                   max={projectMaxDate || undefined}
                 />
                 {sprintDateErr && <span className={styles.dateErrorMsg}>{sprintDateErr}</span>}
+
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.label}>Descrição (Opcional)</label>
@@ -844,13 +845,13 @@ export default function ProjectDashboardPage() {
                 <div className={styles.formGroup}>
                   <label className={styles.label}>
                     Prazo <span className={styles.required}>*</span>
-                    {!isProfessor && <span className={styles.lockedHint}><FiLock size={12} /> Apenas professor</span>}
+
                   </label>
                   <input
                     type="date" className={`${styles.input} ${taskCreateDateErr ? styles.inputError : ""}`}
                     value={newTaskDeadline} onChange={(e) => onTaskDeadlineChange(e.target.value)}
                     max={newTaskSprintId ? getSprintMaxDate(newTaskSprintId) : undefined}
-                    disabled={!isProfessor} required={isProfessor}
+
                   />
                   {taskCreateDateErr && <span className={styles.dateErrorMsg}>{taskCreateDateErr}</span>}
                 </div>

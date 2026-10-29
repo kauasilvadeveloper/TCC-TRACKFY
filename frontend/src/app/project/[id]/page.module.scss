@@ -842,7 +842,74 @@ $accent-warning: #f59e0b;
 }
 
 // ==========================================
-// SEÇÃO DO QUADRO DE TAREFAS (Visão Geral / Main)
+// SPRINT ATIVA (banner da Visão Geral)
+// ==========================================
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba($accent-green, 0.6);
+  }
+
+  70% {
+    box-shadow: 0 0 0 8px rgba($accent-green, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba($accent-green, 0);
+  }
+}
+
+.pulsingDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: $accent-green;
+  flex-shrink: 0;
+  animation: pulse 1.8s infinite;
+}
+
+.activeSprintBanner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.875rem 1.25rem;
+  background-color: rgba($accent-green, 0.1);
+  border: 1px solid $accent-green;
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  color: $text-primary;
+
+  strong {
+    color: $accent-green;
+    font-weight: 700;
+  }
+
+  .activeSprintDate {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: $text-secondary;
+    font-size: 0.8125rem;
+  }
+}
+
+.activeSprintCard {
+  border-color: rgba($accent-green, 0.5) !important;
+  background-color: rgba($accent-green, 0.05) !important;
+}
+
+.activeSprintIndicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: $accent-green;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+// ==========================================
+// QUADRO KANBAN (Visão Geral)
 // ==========================================
 .kanbanSection {
   background-color: $card-bg;
@@ -851,7 +918,7 @@ $accent-warning: #f59e0b;
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.5rem;
 
   .kanbanSectionHeader {
     display: flex;
@@ -882,7 +949,6 @@ $accent-warning: #f59e0b;
         font-family: inherit;
         outline: none;
         cursor: pointer;
-        transition: border-color 0.2s;
 
         &:focus {
           border-color: $primary-blue;
@@ -914,4 +980,173 @@ $accent-warning: #f59e0b;
       }
     }
   }
+}
+
+.kanbanBoard {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(260px, 1fr));
+  gap: 1.25rem;
+  align-items: stretch;
+  overflow-x: auto;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.kanbanColumn {
+  position: relative;
+  background-color: #0b1120;
+  border: 1px solid $border-color;
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 320px;
+  transition: border-color 0.2s, background-color 0.2s;
+
+  &.dragOver {
+    border-color: $primary-blue;
+    background-color: rgba($primary-blue, 0.06);
+  }
+}
+
+// Título da coluna em destaque + contador no canto superior direito
+.kanbanColumnHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.25rem 0.25rem 0.875rem;
+  border-bottom: 2px solid $border-subtle;
+
+  .kanbanColumnTitle {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: $text-primary;
+  }
+
+  .kanbanColumnCount {
+    min-width: 26px;
+    height: 26px;
+    padding: 0 0.5rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba($primary-blue, 0.15);
+    border: 1px solid rgba($primary-blue, 0.4);
+    color: #93c5fd;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+}
+
+// cor da borda de cada coluna conforme o tipo
+.colTodo {
+  border-bottom-color: $text-muted;
+}
+
+.colProgress {
+  border-bottom-color: $accent-warning;
+}
+
+.colDone {
+  border-bottom-color: $accent-green;
+}
+
+.kanbanCards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex: 1;
+  min-height: 120px; // área de drop mesmo com coluna vazia
+}
+
+// Card da tarefa
+.kanbanCard {
+  background-color: $card-bg;
+  border: 1px solid $border-subtle;
+  border-radius: 10px;
+  padding: 0.875rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  cursor: grab;
+  user-select: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+
+  &:hover {
+    border-color: $primary-blue;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  &.dragging {
+    opacity: 0.4;
+    border-style: dashed;
+  }
+
+  // evita que filhos "roubem" o evento de drag
+  * {
+    pointer-events: none;
+  }
+
+  .kanbanCardTitle {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: $text-primary;
+    line-height: 1.35;
+  }
+
+  .stackBadgeSmall {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: #93c5fd;
+    background-color: rgba($primary-blue, 0.12);
+    border: 1px solid rgba($primary-blue, 0.3);
+  }
+
+  .kanbanCardFooter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.875rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid $border-color;
+
+    .kanbanCardMeta {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.75rem;
+      color: $text-muted;
+    }
+  }
+}
+
+.emptyColumn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1.5rem 1rem;
+  border: 2px dashed $border-subtle;
+  border-radius: 10px;
+  color: $text-muted;
+  font-size: 0.8125rem;
 }
