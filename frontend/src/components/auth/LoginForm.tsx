@@ -19,7 +19,14 @@ export function LoginForm() {
     setLoading(true);
 
     try {
-      await login({ email, password });
+      if (email.endsWith("@docente.senai.br")) {
+        await login({ email, password }, "/professor");
+      } else if (email.endsWith("@coordenador.senai.br")) {
+        await login({ email, password }, "/coordination");
+      } else {
+        await login({ email, password });
+      }
+
       console.log("Usuário logado com sucesso");
     } catch (err: unknown) {
       // Captura a exceção tratada pelo interceptor do Axios
