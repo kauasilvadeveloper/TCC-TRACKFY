@@ -1,38 +1,30 @@
-import { AppError } from "../../errors/AppError";
 import { prisma } from "../../prisma";
 
 interface UpdateProjectRequest {
-  creatorRole: string;
-  projectId: number;
-  title?: string;
-  description?: string;
-  term?: Date;
+  id: number; // 👈 Certifique-se de que é number
+  tituloProjeto?: string;
+  descricao?: string;
+  prazo?: string;
   tokenGithub?: string;
 }
 
 export class UpdateProjectService {
-  async execute(data: UpdateProjectRequest) {
-    const { creatorRole } = data;
-    const { projectId, title, description, term, tokenGithub } = data;
-
-    const allowedRoles = ["aluno", "professor"];
-
-    if (!creatorRole || !allowedRoles.includes(creatorRole.toLowerCase())) {
-      throw new AppError(
-        "Acesso negado: Permissão insuficiente para alterar projetos.",
-        403, // Forbidden
-      );
-    }
-
+  async execute({
+    id,
+    tituloProjeto,
+    descricao,
+    prazo,
+    tokenGithub,
+  }: UpdateProjectRequest) {
     const project = await prisma.projeto.update({
       where: {
-        id: projectId,
+        id: Number(id), // 👈 Garantia dupla de conversão para o Prisma
       },
       data: {
-        tituloProjeto: title,
-        descricao: description,
-        prazo: term,
-        tokenGithub: tokenGithub,
+        tituloProjeto,
+        descricao,
+        prazo: prazo ? new Date(prazo) : undefined,
+        tokenGithub,
       },
     });
 

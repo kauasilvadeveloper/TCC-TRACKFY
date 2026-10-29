@@ -28,6 +28,10 @@ import {
   FiGitCommit,
   FiUser,
   FiGitBranch,
+  FiSettings,
+  FiEdit3,
+  FiUserPlus,
+  FiAlertTriangle,
 } from "react-icons/fi";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -68,7 +72,7 @@ export default function ProjectDashboardPage() {
 
   // ── UI
   const [activeTab, setActiveTab] = useState<
-    "overview" | "sprints" | "tasks" | "kanban"
+    "overview" | "sprints" | "tasks" | "kanban" | "settings"
   >("overview");
   const [userRole, setUserRole] = useState("aluno");
 
@@ -562,6 +566,253 @@ export default function ProjectDashboardPage() {
     }
   };
 
+  // ── Estados para a aba de Configurações ──────────────────────────────────────
+  const [editProjectTitle, setEditProjectTitle] = useState(
+    project?.title || project?.tituloProjeto || "",
+  );
+  const [editProjectDesc, setEditProjectDesc] = useState(
+    project?.description || project?.descricao || "",
+  );
+  const [editProjectDeadline, setEditProjectDeadline] = useState(
+    toInputDate(project?.prazo || project?.term),
+  );
+  const [isSubmittingProjectEdit, setIsSubmittingProjectEdit] = useState(false);
+
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [isSubmittingInvite, setIsSubmittingInvite] = useState(false);
+
+  const [confirmDeleteProject, setConfirmDeleteProject] = useState(false);
+  const [isDeletingProject, setIsDeletingProject] = useState(false);
+
+  // Sincroniza o formulário quando o projeto carrega
+  useEffect(() => {
+    if (project) {
+      setEditProjectTitle(project.title || project.tituloProjeto || "");
+      setEditProjectDesc(project.description || project.descricao || "");
+      setEditProjectDeadline(toInputDate(project.prazo || project.term));
+    }
+  }, [project]);
+
+  // ── Funções de Ação ──────────────────────────────────────────────────────────
+
+  // 1. Editar Projeto (PATCH /project/:id)
+  const handleUpdateProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editProjectTitle.trim()) return;
+
+    try {
+      setIsSubmittingProjectEdit(true);
+
+      // Formatação da data em ISO String
+      let formattedTerm: string | null = null;
+      if (editProjectDeadline) {
+        const d = new Date(`${editProjectDeadline}T23:59:59.000Z`);
+        if (!isNaN(d.getTime())) {
+          formattedTerm = d.toISOString();
+        }
+      }
+
+      const token = Cookies.get("trackfy_token");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      // Payload com os nomes de campos esperados pelo Prisma[cite: 7]
+      const payload = {
+        id: Number(projectId), // Envia como número caso o controller busque do body
+        tituloProjeto: editProjectTitle.trim(),
+        descricao: editProjectDesc.trim() || null,
+        prazo: formattedTerm,
+        tokenGithub: project?.tokenGithub || null,
+      };
+
+      const res = await api.patch(`/project/${projectId}`, payload, {
+        headers,
+      });
+
+      // Atualiza o estado da página
+      setProject((prev: any) => ({
+        ...prev,
+        ...res.data,
+        title: editProjectTitle.trim(),
+        tituloProjeto: editProjectTitle.trim(),
+        description: editProjectDesc.trim(),
+        descricao: editProjectDesc.trim(),
+        term: formattedTerm || prev?.term,
+        prazo: formattedTerm || prev?.prazo,
+      }));
+
+      alert("Projeto atualizado com sucesso!");
+    } catch (err: any) {
+      console.error("Erro ao atualizar projeto:", err);
+      alert(
+        err.response?.data?.message ||
+          "Erro ao atualizar o projeto. Verifique o backend.",
+      );
+    } finally {
+      setIsSubmittingProjectEdit(false);
+    }
+  };
+
+  // ── Estados para busca e convite de membros ──────────────────────────────────
+  const [availableUsers, setAvailableUsers] = useState<any[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
+
+  // Busca os alunos disponíveis nas turmas do usuário logado
+  useEffect(() => {
+    async function fetchClassUsers() {
+      try {
+        const token = Cookies.get("trackfy_token");
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const rawUser = Cookies.get("trackfy_user");
+
+        let currentUserId: string | number | null = null;
+
+        if (rawUser) {
+          try {
+            const parsed = JSON.parse(rawUser);
+            currentUserId =
+              parsed.id ??
+              parsed.usuarioId ??
+              parsed.fkUsuario ??
+              parsed.FK_usuario ??
+              parsed.user?.id;
+          } catch (e) {
+            console.error("Erro ao ler trackfy_user:", e);
+          }
+        }
+
+        // 1. Busca as turmas/salas
+        const response = await api.get("/classes", { headers });
+        const classes = Array.isArray(response.data) ? response.data : [];
+
+        // 2. Busca os alunos de cada sala
+        const userPromises = classes.map((cls: any) =>
+          api.get(`/class/${cls.id}/users`, { headers }).catch(() => null),
+        );
+
+        const responses = await Promise.all(userPromises);
+        const usersMap = new Map<string, any>();
+
+        responses.forEach((res, index) => {
+          if (!res?.data) return;
+
+          const rawMembers: any[] = Array.isArray(res.data)
+            ? res.data
+            : res.data.users ||
+              res.data.usuarios ||
+              res.data.alunos ||
+              res.data.members ||
+              [];
+
+          rawMembers.forEach((item) => {
+            const userObj = item.usuario || item.user || item.aluno || item;
+
+            const uid =
+              item?.fkUsuario ??
+              item?.FK_usuario ??
+              item?.fk_usuario ??
+              userObj?.fkUsuario ??
+              userObj?.FK_usuario ??
+              userObj?.id ??
+              userObj?.usuarioId ??
+              item?.usuarioId ??
+              item?.id;
+
+            const displayName =
+              userObj?.nome ??
+              userObj?.name ??
+              userObj?.email ??
+              item?.nome ??
+              item?.name ??
+              item?.email ??
+              `Usuário #${uid}`;
+
+            // Filtra se for ID válido e diferente do usuário logado
+            if (
+              uid !== undefined &&
+              uid !== null &&
+              String(uid) !== String(currentUserId)
+            ) {
+              usersMap.set(String(uid), {
+                ...item,
+                ...userObj,
+                id: uid,
+                displayName,
+              });
+            }
+          });
+        });
+
+        setAvailableUsers(Array.from(usersMap.values()));
+      } catch (err) {
+        console.error("Erro ao carregar alunos da turma:", err);
+      }
+    }
+
+    fetchClassUsers();
+  }, []);
+
+  // ── Handler do Convite ────────────────────────────────────────────────────────
+  const handleInviteMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedUserId) return;
+
+    try {
+      setIsSubmittingInvite(true);
+      const token = Cookies.get("trackfy_token");
+      const rawUser = Cookies.get("trackfy_user");
+
+      let currentUserId: string | number | null = null;
+      if (rawUser) {
+        try {
+          const parsed = JSON.parse(rawUser);
+          currentUserId =
+            parsed.id ??
+            parsed.usuarioId ??
+            parsed.fkUsuario ??
+            parsed.FK_usuario ??
+            parsed.user?.id;
+        } catch (e) {
+          console.error("Erro ao converter trackfy_user:", e);
+        }
+      }
+
+      if (!currentUserId) {
+        alert(
+          "Sessão inválida. Não foi possível obter o ID do usuário logado.",
+        );
+        return;
+      }
+
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      await api.post(
+        "/project/member",
+        {
+          projectId: Number(projectId),
+          targetUserId: Number(selectedUserId),
+          usuarioId: Number(currentUserId),
+          funcaoId: 1,
+        },
+        { headers },
+      );
+
+      alert("Membro adicionado com sucesso ao projeto!");
+      setSelectedUserId("");
+    } catch (err: any) {
+      // Tratamento para conflito (Membro já existente)
+      if (err.response?.status === 409) {
+        alert("Este aluno já faz parte do projeto.");
+      } else {
+        alert(
+          err.response?.data?.message ||
+            "Ocorreu um erro ao adicionar o membro.",
+        );
+      }
+    } finally {
+      setIsSubmittingInvite(false);
+    }
+  };
+
   const handleUpdateTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTask || editTaskDateErr) return;
@@ -596,14 +847,25 @@ export default function ProjectDashboardPage() {
     }
   };
 
-  const handleDeleteTask = async () => {
-    if (!selectedTask) return;
+  const handleDeleteProject = async () => {
     try {
-      await api.delete(`/task/${selectedTask.id}`, { headers: authHeaders() });
-      setTasks((p) => p.filter((t: any) => t.id !== selectedTask.id));
-      setIsTaskDetailOpen(false);
+      setIsDeletingProject(true);
+      const token = Cookies.get("trackfy_token");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      // Envia a requisição DELETE com a URL /project/8
+      await api.delete(`/project/${projectId}`, { headers });
+
+      alert("Projeto excluído com sucesso!");
+      router.push("/dashboard");
     } catch (err: any) {
-      alert(err.response?.data?.message || "Erro ao excluir tarefa.");
+      console.error("Erro ao deletar projeto:", err);
+      alert(
+        err.response?.data?.message ||
+          "Erro ao deletar o projeto. Verifique se possui permissão.",
+      );
+    } finally {
+      setIsDeletingProject(false);
     }
   };
 
@@ -777,12 +1039,13 @@ export default function ProjectDashboardPage() {
                 label: `Tarefas (${tasks.length})`,
               },
               { key: "kanban", icon: <FiGrid />, label: "Kanban" },
+              { key: "settings", icon: <FiSettings />, label: "Configurações" },
             ] as const
           ).map(({ key, icon, label }) => (
             <button
               key={key}
               className={`${styles.tabBtn} ${activeTab === key ? styles.activeTab : ""}`}
-              onClick={() => setActiveTab(key)}
+              onClick={() => setActiveTab(key as any)}
             >
               {icon} {label}
             </button>
@@ -1210,6 +1473,162 @@ export default function ProjectDashboardPage() {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ══ CONFIGURAÇÕES ══════════════════════════════════════════════════════ */}
+          {activeTab === "settings" && (
+            <div className={styles.tabSection}>
+              <div className={styles.sectionHeader}>
+                <div>
+                  <h3>Configurações do Projeto</h3>
+                  <p className={styles.sectionSubtitle}>
+                    Gerencie dados, colaboradores e permissões do projeto
+                  </p>
+                </div>
+              </div>
+
+              <div className={styles.settingsGrid}>
+                {/* Formulário de Edição do Projeto */}
+                <div className={styles.settingsCard}>
+                  <div className={styles.settingsCardHeader}>
+                    <FiEdit3 size={18} color="#3b82f6" />
+                    <h4>Editar Informações</h4>
+                  </div>
+                  <form
+                    onSubmit={handleUpdateProject}
+                    className={styles.modalForm}
+                  >
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>Título do Projeto</label>
+                      <input
+                        type="text"
+                        className={styles.input}
+                        value={editProjectTitle}
+                        onChange={(e) => setEditProjectTitle(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>Descrição</label>
+                      <textarea
+                        rows={3}
+                        className={styles.textarea}
+                        value={editProjectDesc}
+                        onChange={(e) => setEditProjectDesc(e.target.value)}
+                      />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>Prazo do Projeto</label>
+                      <input
+                        type="date"
+                        className={styles.input}
+                        value={editProjectDeadline}
+                        onChange={(e) => setEditProjectDeadline(e.target.value)}
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className={styles.primaryActionBtn}
+                      disabled={isSubmittingProjectEdit}
+                    >
+                      {isSubmittingProjectEdit
+                        ? "Salvando..."
+                        : "Salvar Alterações"}
+                    </button>
+                  </form>
+                </div>
+
+                {/* Formulário de Convite de Membros por Seleção de Turma */}
+                <div className={styles.settingsCard}>
+                  <div className={styles.settingsCardHeader}>
+                    <FiUserPlus size={18} color="#10b981" />
+                    <h4>Convidar Membro da Sala</h4>
+                  </div>
+                  <form
+                    onSubmit={handleInviteMember}
+                    className={styles.modalForm}
+                  >
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>
+                        SELECIONE UM ALUNO DA SUA SALA
+                      </label>
+                      <select
+                        className={styles.select}
+                        value={selectedUserId}
+                        onChange={(e) => setSelectedUserId(e.target.value)}
+                        required
+                      >
+                        <option value="">Selecione um usuário...</option>
+                        {availableUsers.map((u: any) => (
+                          <option key={u.id} value={u.id}>
+                            {u.displayName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <button
+                      type="submit"
+                      className={styles.secondaryActionBtn}
+                      disabled={isSubmittingInvite || !selectedUserId}
+                    >
+                      {isSubmittingInvite
+                        ? "Adicionando..."
+                        : "Adicionar ao Projeto"}
+                    </button>
+                  </form>
+                </div>
+
+                {/* Zona de Perigo (Exclusão) */}
+                <div
+                  className={`${styles.settingsCard} ${styles.dangerZoneCard}`}
+                >
+                  <div className={styles.settingsCardHeader}>
+                    <FiAlertTriangle size={18} color="#f87171" />
+                    <h4 style={{ color: "#f87171" }}>Zona de Perigo</h4>
+                  </div>
+                  <p className={styles.dangerText}>
+                    Esta ação excluirá permanentemente o projeto, incluindo
+                    todas as sprints, tarefas e históricos associados.
+                  </p>
+
+                  {!confirmDeleteProject ? (
+                    <button
+                      type="button"
+                      className={styles.dangerBtnSolid}
+                      onClick={() => setConfirmDeleteProject(true)}
+                    >
+                      <FiTrash2 /> Deletar Projeto
+                    </button>
+                  ) : (
+                    <div className={styles.deleteConfirm}>
+                      <p>
+                        Tem certeza absoluta? Esta ação não pode ser desfeita.
+                      </p>
+                      <div className={styles.deleteConfirmActions}>
+                        <button
+                          type="button"
+                          className={styles.cancelBtn}
+                          onClick={() => setConfirmDeleteProject(false)}
+                          disabled={isDeletingProject}
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.dangerBtnSolid}
+                          onClick={handleDeleteProject}
+                          disabled={isDeletingProject}
+                        >
+                          {isDeletingProject
+                            ? "Excluindo..."
+                            : "Confirmar Exclusão"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -1648,7 +2067,7 @@ export default function ProjectDashboardPage() {
             </div>
 
             {/* Inner tabs */}
-            <div className={styles.innerTabs}>
+            {/* <div className={styles.innerTabs}>
               <button
                 className={`${styles.innerTab} ${taskDetailTab === "details" ? styles.activeInnerTab : ""}`}
                 onClick={() => setTaskDetailTab("details")}
@@ -1662,7 +2081,7 @@ export default function ProjectDashboardPage() {
                 <FiMessageSquare size={13} /> Comentários (
                 {(selectedTask.comentarios || []).length})
               </button>
-            </div>
+            </div> */}
 
             {/* Details Tab */}
             {taskDetailTab === "details" && (
