@@ -3,13 +3,14 @@
 import React, { useState } from "react";
 import styles from "./CreateTaskModal.module.scss";
 import { FiX, FiCheck } from "react-icons/fi";
-import { ProfessorClass, ProfessorTask } from "@/src/types/professor";
+import { ClassProject, ProfessorClass, ProfessorTask } from "@/src/types/professor";
 
 interface CreateTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
   classes: ProfessorClass[];
   selectedClassId: number | null;
+  projects: ClassProject[];
   onCreateTask: (newTask: Omit<ProfessorTask, "id">) => Promise<void> | void;
 }
 
@@ -18,6 +19,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   onClose,
   classes,
   selectedClassId,
+  projects,
   onCreateTask,
 }) => {
   const [tituloTarefa, setTituloTarefa] = useState("");
@@ -25,7 +27,8 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   const [prazoTarefa, setPrazoTarefa] = useState("");
   const [stack, setStack] = useState("React");
   const [status, setStatus] = useState<"pendente" | "em andamento" | "concluída">("pendente");
-  const [classId, setClassId] = useState<number>(selectedClassId || classes[0]?.id || 1);
+  const [classId, setClassId] = useState<number>(selectedClassId || classes[0]?.id || 0);
+  const [projectId, setProjectId] = useState<number>(projects[0]?.id || 0);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,6 +44,10 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       setError("A data limite/prazo é obrigatória.");
       return;
     }
+    if (!projectId) {
+      setError("Selecione um projeto real da turma para criar a tarefa.");
+      return;
+    }
 
     try {
       setSubmitting(true);
@@ -52,6 +59,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
         stack,
         status,
         classId: Number(classId),
+        projectId: Number(projectId),
       });
 
       // Limpar formulário
@@ -173,6 +181,28 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 ))}
               </select>
             </div>
+          </div>
+
+          <div className={styles.formGroup}>
+            <label className={styles.label}>
+              Projeto da turma <span className={styles.required}>*</span>
+            </label>
+            <select
+              className={styles.select}
+              value={projectId}
+              onChange={(e) => setProjectId(Number(e.target.value))}
+              required
+            >
+              {projects.length === 0 ? (
+                <option value={0}>Nenhum projeto disponível</option>
+              ) : (
+                projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.tituloProjeto}
+                  </option>
+                ))
+              )}
+            </select>
           </div>
 
           <div className={styles.modalFooter}>

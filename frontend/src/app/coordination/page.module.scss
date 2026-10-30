@@ -631,6 +631,12 @@
     margin-top: auto;
     padding-top: 0.25rem;
 
+    .assignActions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
     .addStudentBtn {
       width: 100%;
       background-color: #1e293b;

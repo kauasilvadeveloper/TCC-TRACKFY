@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import styles from "./page.module.scss";
 import { api } from "@/src/services/api";
+import { authHeaders } from "@/src/utils/academicRole";
 import { FiArrowLeft, FiUserPlus } from "react-icons/fi";
 
 export default function RegisterUserPage() {
@@ -28,11 +29,8 @@ export default function RegisterUserPage() {
   useEffect(() => {
     async function fetchClasses() {
       try {
-        const token = localStorage.getItem("trackfy_token") || localStorage.getItem("@token") || localStorage.getItem("@session") || localStorage.getItem("token");
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
-        const response = await api.get("/classes", { headers }).catch(() => ({ data: [] }));
-        setClasses(response.data || []);
+        const response = await api.get("/classes", { headers: authHeaders() });
+        setClasses(Array.isArray(response.data) ? response.data : []);
       } catch (err) {
         console.error("Erro ao carregar turmas:", err);
       }
@@ -75,26 +73,37 @@ export default function RegisterUserPage() {
     try {
       setLoading(true);
 
-      const token = localStorage.getItem("trackfy_token") || localStorage.getItem("@token") || localStorage.getItem("@session") || localStorage.getItem("token");
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const headers = authHeaders();
+      const apiRole = role === "docente" ? "professor" : role;
 
-      // Chamada para a rota de cadastro no backend
       const response = await api.post("/user-register", {
         name,
         email: trimmedEmail,
         password,
-        role,
+        role: apiRole,
       }, { headers });
 
       const createdUser = response.data;
       const createdUserId = createdUser?.id || createdUser?.id_usuario;
 
-      // Se uma sala foi selecionada, realiza a vinculação na rota /class/join
       if (selectedClassId && createdUserId) {
-        await api.post("/class/join", {
-          fkSala: Number(selectedClassId),
-          fkUsuario: Number(createdUserId)
-        }, { headers }).catch((err) => console.error("Erro ao vincular sala ao usuário:", err));
+        try {
+          await api.post("/class/join", {
+            code: Number(selectedClassId),
+            targetUser: Number(createdUserId),
+          }, { headers });
+        } catch (joinErr) {
+          console.error("Erro ao vincular sala ao usuário:", joinErr);
+          setSuccessMessage(
+            "Usuário cadastrado, mas não foi possível vincular à sala. Use a coordenação para fazer o vínculo.",
+          );
+          setName("");
+          setEmail("");
+          setPassword("");
+          setRole("aluno");
+          setSelectedClassId("");
+          return;
+        }
       }
 
       setSuccessMessage("Usuário cadastrado com sucesso!");

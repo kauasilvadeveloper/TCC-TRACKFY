@@ -136,7 +136,9 @@ export default function ProjectDashboardPage() {
   const [isSubmittingKanban, setIsSubmittingKanban] = useState(false);
 
   // ─── Derived ──────────────────────────────────────────────────────────────
-  const isProfessor = userRole.toLowerCase() === "professor";
+  const isProfessor =
+    userRole.toLowerCase() === "professor" ||
+    userRole.toLowerCase() === "docente";
 
   const projectMaxDate = (() => {
     const d = project?.prazo || project?.term;
@@ -186,7 +188,7 @@ export default function ProjectDashboardPage() {
     if (raw) {
       try {
         const p = JSON.parse(raw);
-        setUserRole(p.cargoEscola || p.role || "aluno");
+        setUserRole(p.cargoEscola || p.role || p.user?.role || p.user?.cargoEscola || "aluno");
       } catch { }
     }
   }, []);
@@ -1600,7 +1602,7 @@ export default function ProjectDashboardPage() {
                   >
                     <div className={styles.formGroup}>
                       <label className={styles.label}>
-                        SELECIONE UM ALUNO DA SUA SALA
+                        SELECIONE UM MEMBRO DA SALA
                       </label>
                       <select
                         className={styles.select}

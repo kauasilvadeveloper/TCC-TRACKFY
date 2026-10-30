@@ -7,6 +7,13 @@ import styles from "./page.module.scss";
 import { api } from "@/src/services/api";
 import Cookies from "js-cookie";
 import {
+  authHeaders,
+  getSessionUserId,
+  isStudentUser,
+  isTeacherUser,
+  normalizeCargo,
+} from "@/src/utils/academicRole";
+import {
   FiUserPlus,
   FiTrash2,
   FiSearch,
@@ -43,35 +50,24 @@ export default function CoordinationPage() {
   );
   const [isClassDetailsModalOpen, setIsClassDetailsModalOpen] = useState(false);
 
-  // Estados para Atribuição Rápida de Aluno à Turma
+  // Estados para Atribuição Rápida de Aluno/Docente à Turma
   const [selectedClassForUser, setSelectedClassForUser] = useState<
     number | null
   >(null);
-  const [selectedStudentId, setSelectedStudentId] = useState<string>("");
+  const [assignRole, setAssignRole] = useState<"aluno" | "docente">("aluno");
+  const [selectedMemberId, setSelectedMemberId] = useState<string>("");
 
   useEffect(() => {
     fetchCoordinationData();
   }, []);
 
-  // Helper flexível para identificar o cargo do usuário
-  const getUserCargo = (user: any): string => {
-    if (!user) return "";
-    const userData = user.usuario || user;
-    const cargo =
-      userData.cargoEscola ||
-      userData.cargo_escola ||
-      userData.cargo ||
-      userData.role ||
-      "";
-    return cargo.toString().toLowerCase().trim();
-  };
+  const getUserCargo = (user: any): string => normalizeCargo(user);
 
-  const getClassStudents = (clsUsers: any[]) => {
-    return (clsUsers || []).filter((u: any) => {
-      const c = getUserCargo(u);
-      return c === "aluno" || c === "student";
-    });
-  };
+  const getClassStudents = (clsUsers: any[]) =>
+    (clsUsers || []).filter((u: any) => isStudentUser(u));
+
+  const getClassTeachers = (clsUsers: any[]) =>
+    (clsUsers || []).filter((u: any) => isTeacherUser(u));
 
   // Busca de dados com desaninhamento do Prisma
   async function fetchCoordinationData() {
@@ -167,9 +163,9 @@ export default function CoordinationPage() {
       setSubmittingClass(true);
 
       const token = Cookies.get("trackfy_token");
-      const user = JSON.parse(Cookies.get("trackfy_user") || "{}");
+      const coordinatorId = getSessionUserId();
 
-      if (!token) {
+      if (!token || !coordinatorId) {
         alert("Sessão expirada. Faça login novamente.");
         return;
       }
@@ -185,14 +181,21 @@ export default function CoordinationPage() {
         { headers },
       );
 
-      await api.post(
-        "/class/join",
-        {
-          code: response.data.classroom.id,
-          targetUser: user.id,
-        },
-        { headers },
-      );
+      const classId =
+        response.data?.classroom?.id ||
+        response.data?.id ||
+        response.data?.sala?.id;
+
+      if (classId) {
+        await api.post(
+          "/class/join",
+          {
+            code: classId,
+            targetUser: coordinatorId,
+          },
+          { headers },
+        );
+      }
 
       setIsClassModalOpen(false);
       setAnoEncerramento(new Date().getFullYear());
@@ -210,45 +213,34 @@ export default function CoordinationPage() {
     }
   };
 
-  // Vinculação de aluno à turma
-  const handleAddStudentToClass = async (classId: number) => {
-    if (!selectedStudentId) return;
+  const handleAddMemberToClass = async (classId: number) => {
+    if (!selectedMemberId) return;
 
     try {
-      const token = Cookies.get("trackfy_token");
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
       await api.post(
         "/class/join",
         {
           code: classId,
-          targetUser: Number(selectedStudentId),
+          targetUser: Number(selectedMemberId),
         },
-        { headers },
+        { headers: authHeaders() },
       );
 
       setSelectedClassForUser(null);
-      setSelectedStudentId("");
+      setSelectedMemberId("");
       fetchCoordinationData();
-    } catch (err) {
-      console.error("Erro ao vincular aluno à turma:", err);
-      alert("Não foi possível vincular o aluno à turma.");
+    } catch (err: any) {
+      console.error("Erro ao vincular usuário à turma:", err);
+      alert(
+        err.response?.data?.message ||
+          err.response?.data?.error ||
+          "Não foi possível vincular o usuário à turma.",
+      );
     }
   };
 
-  // Listas filtradas por cargo
-  const studentsList = users.filter((u) => {
-    const cargo = getUserCargo(u);
-    return cargo === "aluno" || cargo === "student";
-  });
-
-  const teachersList = users.filter((u) => {
-    const cargo = getUserCargo(u);
-    return (
-      !cargo.includes("coord") &&
-      (cargo.includes("prof") || cargo.includes("docen") || cargo.includes("teach"))
-    );
-  });
+  const studentsList = users.filter((u) => isStudentUser(u));
+  const teachersList = users.filter((u) => isTeacherUser(u));
 
   // Filtro da tabela de usuários
   const filteredUsers = users.filter((user: any) => {
@@ -261,16 +253,10 @@ export default function CoordinationPage() {
     const cargo = getUserCargo(user);
 
     if (activeTab === "alunos") {
-      return matchesSearch && (cargo === "aluno" || cargo === "student");
+      return matchesSearch && isStudentUser(user);
     }
     if (activeTab === "docentes") {
-      return (
-        matchesSearch &&
-        !cargo.includes("coord") &&
-        (cargo.includes("prof") ||
-          cargo.includes("docen") ||
-          cargo.includes("teach"))
-      );
+      return matchesSearch && isTeacherUser(user);
     }
 
     return matchesSearch;
@@ -400,10 +386,8 @@ export default function CoordinationPage() {
                 const letterBadge = String.fromCharCode(65 + (index % 26));
                 const classUsers = cls.users || [];
 
-                const studentCount = classUsers.filter((u: any) => {
-                  const c = getUserCargo(u);
-                  return c === "aluno" || c === "student";
-                }).length;
+                const studentCount = getClassStudents(classUsers).length;
+                const teacherCount = getClassTeachers(classUsers).length;
 
                 return (
                   <div
@@ -431,6 +415,12 @@ export default function CoordinationPage() {
                           {studentCount}
                         </strong>
                       </div>
+                      <div className={styles.detailRow}>
+                        <span className={styles.label}>Docentes:</span>
+                        <strong className={styles.countValue}>
+                          {teacherCount}
+                        </strong>
+                      </div>
                     </div>
 
                     <div
@@ -440,40 +430,66 @@ export default function CoordinationPage() {
                       {selectedClassForUser === cls.id ? (
                         <div className={styles.quickAssignBox}>
                           <select
-                            value={selectedStudentId}
+                            value={selectedMemberId}
                             onChange={(e) =>
-                              setSelectedStudentId(e.target.value)
+                              setSelectedMemberId(e.target.value)
                             }
                           >
-                            <option value="">Selecione um Aluno...</option>
-                            {studentsList.map((s) => (
+                            <option value="">
+                              {assignRole === "docente"
+                                ? "Selecione um docente..."
+                                : "Selecione um aluno..."}
+                            </option>
+                            {(assignRole === "docente"
+                              ? teachersList
+                              : studentsList
+                            ).map((member) => (
                               <option
-                                key={s.id || s.id_usuario}
-                                value={s.id || s.id_usuario}
+                                key={member.id || member.id_usuario}
+                                value={member.id || member.id_usuario}
                               >
-                                {s.nome || s.name}
+                                {member.nome || member.name}
                               </option>
                             ))}
                           </select>
                           <button
-                            onClick={() => handleAddStudentToClass(cls.id)}
+                            onClick={() => handleAddMemberToClass(cls.id)}
                           >
                             OK
                           </button>
                           <button
                             className={styles.cancelIcon}
-                            onClick={() => setSelectedClassForUser(null)}
+                            onClick={() => {
+                              setSelectedClassForUser(null);
+                              setSelectedMemberId("");
+                            }}
                           >
                             <FiX />
                           </button>
                         </div>
                       ) : (
-                        <button
-                          className={styles.addStudentBtn}
-                          onClick={() => setSelectedClassForUser(cls.id)}
-                        >
-                          + Vincular Aluno
-                        </button>
+                        <div className={styles.assignActions}>
+                          <button
+                            className={styles.addStudentBtn}
+                            onClick={() => {
+                              setSelectedClassForUser(cls.id);
+                              setAssignRole("aluno");
+                              setSelectedMemberId("");
+                            }}
+                          >
+                            + Vincular Aluno
+                          </button>
+                          <button
+                            className={styles.addStudentBtn}
+                            onClick={() => {
+                              setSelectedClassForUser(cls.id);
+                              setAssignRole("docente");
+                              setSelectedMemberId("");
+                            }}
+                          >
+                            + Vincular Docente
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -600,7 +616,7 @@ export default function CoordinationPage() {
         </div>
       )}
 
-      {/* Modal: Detalhes da Turma (Apenas Alunos) */}
+      {/* Modal: Detalhes da Turma */}
       {isClassDetailsModalOpen && selectedClassDetails && (
         <div
           className={styles.modalOverlay}
@@ -664,6 +680,56 @@ export default function CoordinationPage() {
                               <span className={styles.studentName}>{sName}</span>
                               <span className={styles.studentEmail}>
                                 {student.email}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      },
+                    )
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.detailSection}>
+                <div className={styles.sectionHeaderRow}>
+                  <span className={styles.sectionLabel}>
+                    DOCENTES VINCULADOS
+                  </span>
+                  <span className={styles.studentBadgeCount}>
+                    {getClassTeachers(selectedClassDetails.users || []).length}{" "}
+                    docentes
+                  </span>
+                </div>
+
+                <div className={styles.studentsListContainer}>
+                  {getClassTeachers(selectedClassDetails.users || []).length ===
+                    0 ? (
+                    <p className={styles.emptyStudentsText}>
+                      Nenhum docente vinculado a esta turma.
+                    </p>
+                  ) : (
+                    getClassTeachers(selectedClassDetails.users || []).map(
+                      (teacher: any, idx: number) => {
+                        const tName =
+                          teacher.nome || teacher.name || "Docente";
+                        const nameParts = tName.trim().split(" ");
+                        const initials =
+                          nameParts.length > 1
+                            ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase()
+                            : tName.substring(0, 2).toUpperCase();
+
+                        return (
+                          <div
+                            key={teacher.id || idx}
+                            className={styles.studentItem}
+                          >
+                            <span className={styles.studentAvatar}>
+                              {initials}
+                            </span>
+                            <div className={styles.studentInfo}>
+                              <span className={styles.studentName}>{tName}</span>
+                              <span className={styles.studentEmail}>
+                                {teacher.email}
                               </span>
                             </div>
                           </div>

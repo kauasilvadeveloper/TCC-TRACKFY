@@ -36,9 +36,11 @@ import {
   RawCommentItem,
 } from "@/src/types/professor";
 import {
-  initialProfessorTasksMock,
-  initialProfessorProjectsMock,
-} from "@/src/mocks/professorDashboard.mock";
+  authHeaders,
+  getSessionDisplayName,
+  getSessionUserId,
+  isStudentUser,
+} from "@/src/utils/academicRole";
 import { FiAlertCircle, FiBookOpen, FiRefreshCw } from "react-icons/fi";
 
 export default function ProfessorDashboardPage() {
@@ -49,7 +51,7 @@ export default function ProfessorDashboardPage() {
   const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
   const [students, setStudents] = useState<ClassStudent[]>([]);
   const [projects, setProjects] = useState<ClassProject[]>([]);
-  const [tasks, setTasks] = useState<ProfessorTask[]>(initialProfessorTasksMock);
+  const [tasks, setTasks] = useState<ProfessorTask[]>([]);
 
   // Estados de UI
   const [loading, setLoading] = useState<boolean>(true);
@@ -69,57 +71,43 @@ export default function ProfessorDashboardPage() {
   const [selectedTask, setSelectedTask] = useState<ProfessorTask | null>(null);
   const [isTaskDetailsModalOpen, setIsTaskDetailsModalOpen] = useState<boolean>(false);
 
-  // Extração do nome do professor
   const professorName = useMemo(() => {
-    if (user?.user?.name) return user.user.name;
-    return "Prof. Ana Lima";
+    return (
+      user?.user?.name ||
+      user?.name ||
+      getSessionDisplayName() ||
+      "Docente"
+    );
   }, [user]);
 
   const professorFirstName = useMemo(() => {
     return professorName.split(" ")[0];
   }, [professorName]);
 
-  // 1. Busca inicial das turmas do professor (GET /classes)
   const fetchClasses = async () => {
     try {
       setLoading(true);
       setErrorMessage(null);
 
-      const token =
-        Cookies.get("trackfy_token") ||
-        localStorage.getItem("token") ||
-        localStorage.getItem("@token") ||
-        "";
+      const response = await api.get("/classes", { headers: authHeaders() });
+      const rawClasses = Array.isArray(response.data) ? response.data : [];
 
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
-      const response = await api.get("/classes", { headers }).catch(() => null);
-
-      let fetchedClasses: ProfessorClass[] = [];
-
-      if (response && Array.isArray(response.data) && response.data.length > 0) {
-        fetchedClasses = response.data.map((cls: RawClassResponse, index: number) => ({
+      const fetchedClasses: ProfessorClass[] = rawClasses.map(
+        (cls: RawClassResponse, index: number) => ({
           id: cls.id,
           anoEncerramento: cls.anoEncerramento,
           name: `Turma ${String.fromCharCode(65 + index)}`,
-          shift: "Manhã",
           _count: cls._count,
-        }));
-      } else {
-        fetchedClasses = [
-          { id: 1, anoEncerramento: 2026, name: "Turma A", shift: "Manhã", _count: { usuarios: 28 } },
-          { id: 2, anoEncerramento: 2026, name: "Turma B", shift: "Tarde", _count: { usuarios: 24 } },
-        ];
-      }
+        }),
+      );
 
       setClasses(fetchedClasses);
-
-      if (fetchedClasses.length > 0) {
-        setSelectedClassId(fetchedClasses[0].id);
-      }
+      setSelectedClassId(fetchedClasses.length > 0 ? fetchedClasses[0].id : null);
     } catch (err: unknown) {
       console.error("Erro ao buscar turmas:", err);
       setErrorMessage("Não foi possível carregar as turmas acadêmicas.");
+      setClasses([]);
+      setSelectedClassId(null);
     } finally {
       setLoading(false);
     }
@@ -139,53 +127,34 @@ export default function ProfessorDashboardPage() {
     async function fetchStudentsByClass() {
       try {
         setLoadingStudents(true);
-        const token =
-          Cookies.get("trackfy_token") ||
-          localStorage.getItem("token") ||
-          localStorage.getItem("@token") ||
-          "";
 
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const res = await api.get(`/class/${selectedClassId}/users`, {
+          headers: authHeaders(),
+        });
 
-        const res = await api
-          .get(`/class/${selectedClassId}/users`, { headers })
-          .catch(() => null);
-
-        if (res && res.data) {
-          const rawUsers = res.data.users || res.data;
-          if (Array.isArray(rawUsers) && rawUsers.length > 0) {
-            const mappedStudents: ClassStudent[] = rawUsers.map(
-              (item: RawUserItem, idx: number) => {
-                const u = item.usuario || item;
-                return {
-                  id: u.id || idx + 1,
-                  nome: u.nome || u.name || `Aluno ${idx + 1}`,
-                  email: u.email || `aluno${idx + 1}@escola.edu.br`,
-                  sala: item.fkSala || selectedClassId || 1,
-                  cargoEscola: u.cargoEscola || u.cargo_escola || "aluno",
-                };
-              }
-            );
-
-            const filteredAlunos = mappedStudents.filter(
-              (s) => !s.cargoEscola || s.cargoEscola.toLowerCase() === "aluno"
-            );
-
-            setStudents(filteredAlunos.length > 0 ? filteredAlunos : mappedStudents);
-            return;
-          }
+        const rawUsers = res.data?.users || res.data || [];
+        if (!Array.isArray(rawUsers)) {
+          setStudents([]);
+          return;
         }
 
-        const currentSala = selectedClassId || 1;
-        const mockDemonstrationStudents: ClassStudent[] = [
-          { id: 1, nome: "Lucas Fernandes", email: "lucas.fernandes@escola.edu.br", sala: currentSala },
-          { id: 2, nome: "Beatriz Ribeiro", email: "beatriz.ribeiro@escola.edu.br", sala: currentSala },
-          { id: 3, nome: "Gabriel Martins", email: "gabriel.martins@escola.edu.br", sala: currentSala },
-          { id: 4, nome: "Juliana Costa", email: "juliana.costa@escola.edu.br", sala: currentSala },
-        ];
-        setStudents(mockDemonstrationStudents);
+        const mappedStudents: ClassStudent[] = rawUsers.map(
+          (item: RawUserItem, idx: number) => {
+            const u = item.usuario || item;
+            return {
+              id: u.id || item.fkUsuario || idx + 1,
+              nome: u.nome || u.name || `Aluno ${idx + 1}`,
+              email: u.email || "",
+              sala: item.fkSala || selectedClassId || 0,
+              cargoEscola: u.cargoEscola || u.cargo_escola,
+            };
+          },
+        );
+
+        setStudents(mappedStudents.filter((student) => isStudentUser(student)));
       } catch (err) {
         console.error("Erro ao carregar alunos da turma:", err);
+        setStudents([]);
       } finally {
         setLoadingStudents(false);
       }
@@ -198,123 +167,117 @@ export default function ProfessorDashboardPage() {
   useEffect(() => {
     if (!selectedClassId) {
       setProjects([]);
+      setTasks([]);
+      return;
+    }
+
+    if (loadingStudents) return;
+
+    if (students.length === 0) {
+      setProjects([]);
+      setTasks([]);
       return;
     }
 
     async function fetchClassProjects() {
       try {
         setLoadingProjects(true);
-        const token =
-          Cookies.get("trackfy_token") ||
-          localStorage.getItem("token") ||
-          localStorage.getItem("@token") ||
-          "";
+        const headers = authHeaders();
+        const res = await api.get("/project", { headers });
+        const allProjects: RawProjectItem[] = Array.isArray(res.data)
+          ? res.data
+          : [];
 
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const studentIds = new Set(
+          students
+            .map((s) => Number(s.id))
+            .filter((id) => !Number.isNaN(id) && id > 0),
+        );
 
-        // Busca projetos gerais do usuário logado via GET /project
-        const res = await api.get("/project", { headers }).catch(() => null);
+        const filtered = allProjects.filter((proj) => {
+          if (!proj.usuarios || proj.usuarios.length === 0) return false;
+          return proj.usuarios.some((member) =>
+            studentIds.has(Number(member.usuario?.id || member.fkUsuario || 0)),
+          );
+        });
 
-        const studentIds = new Set(students.map((s) => s.id));
+        const matchedProjects: ClassProject[] = await Promise.all(
+          filtered.map(async (p) => {
+            let pSprints: ProfessorSprint[] = [];
+            let pTasks: ProfessorTask[] = [];
 
-        let matchedProjects: ClassProject[] = [];
+            try {
+              const [pDetail, kDetail] = await Promise.all([
+                api.get(`/project/${p.id}`, { headers }),
+                api.get(`/kanban/${p.id}`, { headers }),
+              ]);
 
-        if (res && Array.isArray(res.data) && res.data.length > 0) {
-          // Filtra projetos que possuam algum aluno da turma selecionada
-          const filtered = res.data.filter((proj: RawProjectItem) => {
-            if (!proj.usuarios || proj.usuarios.length === 0) return false;
-            return proj.usuarios.some((u) =>
-              studentIds.has(u.usuario?.id || u.fkUsuario || 0)
-            );
-          });
+              if (pDetail?.data?.sprints) {
+                pSprints = pDetail.data.sprints.map((s: RawSprintItem) => ({
+                  id: s.id,
+                  tituloSprint: s.tituloSprint,
+                  descricaoSprint: s.descricaoSprint,
+                  prazoSprint: s.prazoSprint,
+                }));
+              }
 
-          const targetProjects: RawProjectItem[] = filtered.length > 0 ? filtered : res.data;
-
-          matchedProjects = await Promise.all(
-            targetProjects.map(async (p: RawProjectItem) => {
-              let pSprints: ProfessorSprint[] = [];
-              let pTasks: ProfessorTask[] = [];
-
-              try {
-                const [pDetail, kDetail] = await Promise.all([
-                  api.get(`/project/${p.id}`, { headers }).catch(() => null),
-                  api.get(`/kanban/${p.id}`, { headers }).catch(() => null),
-                ]);
-
-                if (pDetail?.data?.sprints) {
-                  pSprints = pDetail.data.sprints.map((s: RawSprintItem) => ({
-                    id: s.id,
-                    tituloSprint: s.tituloSprint,
-                    descricaoSprint: s.descricaoSprint,
-                    prazoSprint: s.prazoSprint,
-                  }));
-                }
-
-                if (kDetail?.data?.colunas) {
-                  pTasks = kDetail.data.colunas.flatMap((col: RawColumnItem) =>
-                    (col.tarefas || []).map((t: RawTaskItem) => ({
-                      id: t.id,
-                      tituloTarefa: t.tituloTarefa,
-                      descricaoTarefa: t.descricaoTarefa,
-                      status: t.status,
-                      stack: t.stack,
-                      prazoTarefa: t.prazoTarefa,
-                      projectId: p.id,
-                      projectTitle: p.tituloProjeto,
-                      comentarios: (t.comentarios || []).map((c: RawCommentItem) => ({
+              if (kDetail?.data?.colunas) {
+                pTasks = kDetail.data.colunas.flatMap((col: RawColumnItem) =>
+                  (col.tarefas || []).map((t: RawTaskItem) => ({
+                    id: t.id,
+                    tituloTarefa: t.tituloTarefa,
+                    descricaoTarefa: t.descricaoTarefa,
+                    status: t.status,
+                    stack: t.stack,
+                    prazoTarefa: t.prazoTarefa,
+                    projectId: p.id,
+                    projectTitle: p.tituloProjeto,
+                    classId: selectedClassId || undefined,
+                    comentarios: (t.comentarios || []).map(
+                      (c: RawCommentItem) => ({
                         id: c.id,
                         conteudo: c.conteudo,
                         usuario: c.usuario,
-                        createdAt: c.createdAt || new Date().toISOString(),
-                      })),
-                    }))
-                  );
-                }
-              } catch { }
+                        createdAt: c.createdAt,
+                      }),
+                    ),
+                  })),
+                );
+              }
+            } catch (detailErr) {
+              console.error(
+                `Erro ao carregar detalhes do projeto ${p.id}:`,
+                detailErr,
+              );
+            }
 
-              return {
-                id: p.id,
-                tituloProjeto: p.tituloProjeto,
-                descricao: p.descricao,
-                prazo: p.prazo,
-                tokenGithub: p.tokenGithub,
-                classId: selectedClassId || undefined,
-                usuarios: p.usuarios || [],
-                sprints: pSprints,
-                tarefas: pTasks,
-              };
-            })
-          );
-        }
-
-        // Caso a API não tenha projetos vinculados ao banco para os alunos, usa os mocks associados
-        if (matchedProjects.length === 0) {
-          const fallback = initialProfessorProjectsMock.filter(
-            (p) => !p.classId || p.classId === selectedClassId
-          );
-          matchedProjects = fallback.length > 0 ? fallback : initialProfessorProjectsMock.slice(0, 2);
-        }
+            return {
+              id: p.id,
+              tituloProjeto: p.tituloProjeto,
+              descricao: p.descricao,
+              prazo: p.prazo,
+              tokenGithub: p.tokenGithub,
+              classId: selectedClassId || undefined,
+              usuarios: p.usuarios || [],
+              sprints: pSprints,
+              tarefas: pTasks,
+            };
+          }),
+        );
 
         setProjects(matchedProjects);
-
-        // Agrega as tarefas dos projetos para exibição sincronizada
-        const aggregatedTasks = matchedProjects.flatMap((p) => p.tarefas || []);
-        if (aggregatedTasks.length > 0) {
-          setTasks(aggregatedTasks);
-        }
+        setTasks(matchedProjects.flatMap((p) => p.tarefas || []));
       } catch (err) {
         console.error("Erro ao carregar projetos da turma:", err);
-        const fallback = initialProfessorProjectsMock.filter(
-          (p) => !p.classId || p.classId === selectedClassId
-        );
-        setProjects(fallback);
+        setProjects([]);
+        setTasks([]);
       } finally {
         setLoadingProjects(false);
       }
     }
 
     fetchClassProjects();
-  }, [selectedClassId, students]);
+  }, [selectedClassId, students, loadingStudents]);
 
   // 4. Tarefas da turma selecionada
   const classTasks = useMemo(() => {
@@ -348,53 +311,66 @@ export default function ProfessorDashboardPage() {
 
   // ─── AÇÕES DE TAREFAS & STATUS ───
   const handleCreateTask = async (newTaskData: Omit<ProfessorTask, "id">) => {
-    try {
-      const token =
-        Cookies.get("trackfy_token") ||
-        localStorage.getItem("token") ||
-        localStorage.getItem("@token") ||
-        "";
+    const targetProject =
+      projects.find((p) => p.id === newTaskData.projectId) || projects[0];
 
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    if (!targetProject) {
+      throw new Error(
+        "Não há projeto da turma para vincular a tarefa. O docente precisa ser membro do projeto.",
+      );
+    }
 
-      const payload = {
+    const headers = authHeaders();
+    const [pDetail, kDetail] = await Promise.all([
+      api.get(`/project/${targetProject.id}`, { headers }),
+      api.get(`/kanban/${targetProject.id}`, { headers }),
+    ]);
+
+    const firstSprint = pDetail.data?.sprints?.[0];
+    const firstColumn = kDetail.data?.colunas?.[0];
+
+    if (!firstSprint?.id || !firstColumn?.id) {
+      throw new Error(
+        "O projeto precisa ter sprint e kanban para receber uma nova tarefa.",
+      );
+    }
+
+    const res = await api.post(
+      "/task",
+      {
         tituloTarefa: newTaskData.tituloTarefa,
         descricaoTarefa: newTaskData.descricaoTarefa,
         status: newTaskData.status,
         stack: newTaskData.stack || "Geral",
         prazoTarefa: new Date(newTaskData.prazoTarefa).toISOString(),
-        fkColuna: 1,
-        fkSprint: 1,
-      };
+        fkColuna: firstColumn.id,
+        fkSprint: firstSprint.id,
+      },
+      { headers },
+    );
 
-      const res = await api.post("/task", payload, { headers }).catch(() => null);
+    const created = res.data?.data || res.data;
+    const createdTask: ProfessorTask = {
+      id: created.id,
+      tituloTarefa: created.tituloTarefa || newTaskData.tituloTarefa,
+      descricaoTarefa: created.descricaoTarefa || newTaskData.descricaoTarefa,
+      status: created.status || newTaskData.status,
+      stack: created.stack || newTaskData.stack,
+      prazoTarefa: created.prazoTarefa || newTaskData.prazoTarefa,
+      classId: selectedClassId || undefined,
+      projectId: targetProject.id,
+      projectTitle: targetProject.tituloProjeto,
+      comentarios: [],
+    };
 
-      const createdTask: ProfessorTask = {
-        id: res?.data?.id || Date.now(),
-        tituloTarefa: newTaskData.tituloTarefa,
-        descricaoTarefa: newTaskData.descricaoTarefa,
-        status: newTaskData.status,
-        stack: newTaskData.stack,
-        prazoTarefa: newTaskData.prazoTarefa,
-        classId: newTaskData.classId || selectedClassId || 1,
-        comentarios: [],
-      };
-
-      setTasks((prev) => [createdTask, ...prev]);
-    } catch (err) {
-      console.error("Erro ao registrar tarefa:", err);
-      const createdTask: ProfessorTask = {
-        id: Date.now(),
-        tituloTarefa: newTaskData.tituloTarefa,
-        descricaoTarefa: newTaskData.descricaoTarefa,
-        status: newTaskData.status,
-        stack: newTaskData.stack,
-        prazoTarefa: newTaskData.prazoTarefa,
-        classId: newTaskData.classId || selectedClassId || 1,
-        comentarios: [],
-      };
-      setTasks((prev) => [createdTask, ...prev]);
-    }
+    setTasks((prev) => [createdTask, ...prev]);
+    setProjects((prev) =>
+      prev.map((p) =>
+        p.id === targetProject.id
+          ? { ...p, tarefas: [createdTask, ...(p.tarefas || [])] }
+          : p,
+      ),
+    );
   };
 
   const handleToggleStatus = async (taskId: number) => {
@@ -496,34 +472,28 @@ export default function ProfessorDashboardPage() {
   // ─── AÇÕES DE COMENTÁRIOS DE TAREFAS ───
   const handleAddComment = async (taskId: number, content: string) => {
     try {
-      const token =
-        Cookies.get("trackfy_token") ||
-        localStorage.getItem("token") ||
-        localStorage.getItem("@token") ||
-        "";
+      const userId =
+        getSessionUserId() ||
+        (user?.user?.id ? Number(user.user.id) : user?.id ? Number(user.id) : 0);
 
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const userId = user?.user?.id ? Number(user.user.id) : (user?.id ? Number(user.id) : 99);
+      const res = await api.post(
+        `/task/${taskId}/comment`,
+        { conteudo: content },
+        { headers: authHeaders() },
+      );
 
-      const res = await api
-        .post(
-          `/task/${taskId}/comment`,
-          { conteudo: content, userId },
-          { headers }
-        )
-        .catch(() => null);
-
+      const commentData = res.data?.data || res.data;
       const newComment: TaskComment = {
-        id: res?.data?.id || Date.now(),
-        conteudo: content,
+        id: commentData.id,
+        conteudo: commentData.conteudo || content,
         fkTarefa: taskId,
-        fkUsuario: userId,
-        usuario: {
+        fkUsuario: commentData.usuario?.id || userId,
+        usuario: commentData.usuario || {
           id: userId,
           nome: professorName,
-          email: user?.user?.email || "professor@trackfy.edu",
+          email: user?.user?.email || user?.email,
         },
-        createdAt: new Date().toISOString(),
+        createdAt: commentData.createdAt || new Date().toISOString(),
       };
 
       setTasks((prev) =>
@@ -570,15 +540,7 @@ export default function ProfessorDashboardPage() {
 
   const handleDeleteComment = async (commentId: number, taskId: number) => {
     try {
-      const token =
-        Cookies.get("trackfy_token") ||
-        localStorage.getItem("token") ||
-        localStorage.getItem("@token") ||
-        "";
-
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
-      await api.delete(`/comment/${commentId}`, { headers }).catch(() => null);
+      await api.delete(`/comment/${commentId}`, { headers: authHeaders() });
 
       setTasks((prev) =>
         prev.map((t) =>
@@ -713,7 +675,7 @@ export default function ProfessorDashboardPage() {
         {/* 2. Menu Lateral Esquerdo */}
         <ProfessorSidebar
           professorName={professorName}
-          subjectName="Desenvolvimento Web"
+          subjectName="Acompanhamento acadêmico"
           taskCount={pendingTasksCount}
           onOpenTasksModal={() => setIsTasksModalOpen(true)}
           onOpenClassesModal={() => setIsClassesModalOpen(true)}
@@ -788,7 +750,7 @@ export default function ProfessorDashboardPage() {
 
                 <ProfessorClassSummary
                   classNameTitle={currentClassName}
-                  subjectName="Desenvolvimento Web"
+                  subjectName={currentClassName}
                   students={students}
                   selectedClassId={selectedClassId}
                   onOpenTasksModal={() => setIsTasksModalOpen(true)}
@@ -806,6 +768,7 @@ export default function ProfessorDashboardPage() {
         onClose={() => setIsCreateTaskModalOpen(false)}
         classes={classes}
         selectedClassId={selectedClassId}
+        projects={projects}
         onCreateTask={handleCreateTask}
       />
 
@@ -851,11 +814,12 @@ export default function ProfessorDashboardPage() {
         onAddComment={handleAddComment}
         onDeleteComment={handleDeleteComment}
         currentUserId={
-          user?.user?.id
+          getSessionUserId() ||
+          (user?.user?.id
             ? Number(user.user.id)
             : user?.id
-            ? Number(user.id)
-            : undefined
+              ? Number(user.id)
+              : undefined)
         }
       />
     </div>
