@@ -6,6 +6,15 @@ export class GetUsersByClassService {
       where: {
         fkSala: classId,
       },
+      include: {
+        usuario: {
+          select: {
+            id: true,
+            email: true,
+            nome: true,
+          },
+        },
+      },
     });
 
     return users;

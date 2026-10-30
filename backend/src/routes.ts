@@ -43,6 +43,7 @@ import { GetTasksBySprintController } from "./controllers/sprint/GetTasksBySprin
 import { ReopenSprintController } from "./controllers/sprint/ReopenSprintController";
 import { UpdateSprintController } from "./controllers/sprint/UpdateSprintController";
 import { GetGithubCommitsController } from "./controllers/project/GetGithubCommitsController";
+import { GetAllUsersController } from "./controllers/auth/GetAllUsersController";
 // import { GetSprintsByProjectController } from "./controllers/sprint/GetSprintByProjectController";
 
 const router = Router();
@@ -54,6 +55,7 @@ router.post(
   isAuthenticated,
   new CreateUserController().handle,
 );
+router.get("/users", isAuthenticated, new GetAllUsersController().handle);
 
 // ================= SALA / TURMA =================
 router.post("/class", isAuthenticated, new CreateClassController().handle);

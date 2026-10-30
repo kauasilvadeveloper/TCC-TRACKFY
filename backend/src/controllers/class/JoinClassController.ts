@@ -8,12 +8,12 @@ export class JoinClassController {
       const userId = Number(req.user_id);
 
       // Aceita 'code' ou 'salaId' no corpo da requisição
-      const { code, salaId } = req.body;
+      const { code, salaId, targetUser } = req.body;
       const targetSalaId = Number(code || salaId);
 
       const joinClassService = new JoinClassService();
       const enrollment = await joinClassService.execute({
-        userId,
+        userId: targetUser,
         salaId: targetSalaId,
       });
 
