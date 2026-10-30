@@ -5,7 +5,15 @@ export class DeleteProjectController {
   async handle(req: Request, res: Response) {
     const creatorRole = req.user_role;
 
-    const { projectId } = req.body;
+    // Busca de req.params (URL) ou fallback de req.body
+    const rawProjectId =
+      req.params.id || req.params.projectId || req.body?.projectId;
+
+    if (!rawProjectId) {
+      return res.status(400).json({ message: "ID do projeto não fornecido." });
+    }
+
+    const projectId = Number(rawProjectId); // Converte para número inteiro
 
     const deleteProjectService = new DeleteProjectService();
 

@@ -43,6 +43,8 @@ import { GetTasksBySprintController } from "./controllers/sprint/GetTasksBySprin
 import { ReopenSprintController } from "./controllers/sprint/ReopenSprintController";
 import { UpdateSprintController } from "./controllers/sprint/UpdateSprintController";
 import { GetGithubCommitsController } from "./controllers/project/GetGithubCommitsController";
+import { GetAllUsersController } from "./controllers/auth/GetAllUsersController";
+import { GetSprintsByProjectController } from "./controllers/sprint/GetSprintByProjectController";
 // import { GetSprintsByProjectController } from "./controllers/sprint/GetSprintByProjectController";
 
 const router = Router();
@@ -54,6 +56,7 @@ router.post(
   isAuthenticated,
   new CreateUserController().handle,
 );
+router.get("/users", isAuthenticated, new GetAllUsersController().handle);
 
 // ================= SALA / TURMA =================
 router.post("/class", isAuthenticated, new CreateClassController().handle);
@@ -113,7 +116,11 @@ router.get(
   isAuthenticated,
   new GetGithubBranchesController().handle,
 );
-router.get("/project/:projectId/:branchName/commits", isAuthenticated, new GetGithubCommitsController().handle
+
+router.get(
+  "/project/:projectId/:branchName/commits",
+  isAuthenticated,
+  new GetGithubCommitsController().handle,
 );
 
 // ================= KANBAN & COLUNAS =================
@@ -158,11 +165,11 @@ router.get(
   isAuthenticated,
   new GetTasksBySprintController().handle,
 );
-// router.get(
-//   "/sprint/project/:projectId",
-//   isAuthenticated,
-//   new GetSprintsByProjectController().handle,
-// );
+router.get(
+  "/sprint/project/:projectId",
+  isAuthenticated,
+  new GetSprintsByProjectController().handle,
+);
 router.patch(
   "/sprint/reopen",
   isAuthenticated,

@@ -3,7 +3,7 @@ import { CreateSprintService } from "../../services/sprint/CreateSprintService";
 
 export class CreateSprintController {
   async handle(req: Request, res: Response) {
-    const { tituloSprint, descricaoSprint, prazoSprint } = req.body;
+    const { tituloSprint, descricaoSprint, prazoSprint, projetoId } = req.body;
 
     const creatorRole = req.user_role;
 
@@ -14,6 +14,7 @@ export class CreateSprintController {
       tituloSprint,
       descricaoSprint,
       prazoSprint: new Date(prazoSprint),
+      projetoId,
     });
 
     return res.status(201).json(sprint);

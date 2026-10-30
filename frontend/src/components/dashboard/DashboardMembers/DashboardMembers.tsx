@@ -24,51 +24,6 @@ export function DashboardMembers() {
             acompanhe o engajamento de toda a equipe para manter o alinhamento em
             todas as etapas.
           </p>
-
-          <div className={styles.filterTabs} role="tablist" aria-label="Abas de membros">
-            <button
-              type="button"
-              className={`${styles.tabBtn} ${
-                activeTab === "membros" ? styles.active : ""
-              }`}
-              onClick={() => setActiveTab("membros")}
-              role="tab"
-              aria-selected={activeTab === "membros"}
-            >
-              Membros
-            </button>
-            <button
-              type="button"
-              className={`${styles.tabBtn} ${
-                activeTab === "papeis" ? styles.active : ""
-              }`}
-              onClick={() => setActiveTab("papeis")}
-              role="tab"
-              aria-selected={activeTab === "papeis"}
-            >
-              Papéis
-            </button>
-            <button
-              type="button"
-              className={`${styles.tabBtn} ${
-                activeTab === "atividades" ? styles.active : ""
-              }`}
-              onClick={() => setActiveTab("atividades")}
-              role="tab"
-              aria-selected={activeTab === "atividades"}
-            >
-              Atividades
-            </button>
-          </div>
-
-          <button
-            type="button"
-            className={styles.actionBtn}
-            aria-label="Ver equipe completa"
-          >
-            <span>Ver equipe</span>
-            <span aria-hidden="true">→</span>
-          </button>
         </div>
 
         {/* Right Column: Members Widget */}
@@ -99,9 +54,8 @@ export function DashboardMembers() {
 
                 <div className={styles.memberMeta}>
                   <span
-                    className={`${styles.statusDot} ${
-                      member.online ? styles.online : styles.offline
-                    }`}
+                    className={`${styles.statusDot} ${member.online ? styles.online : styles.offline
+                      }`}
                     title={member.online ? "Online" : "Ausente"}
                   />
                   <span className={styles.arrowIcon} aria-hidden="true">

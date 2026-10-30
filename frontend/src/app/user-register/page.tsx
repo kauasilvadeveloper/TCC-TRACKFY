@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import styles from "./page.module.scss";
 import { api } from "@/src/services/api";
+import { authHeaders } from "@/src/utils/academicRole";
 import { FiArrowLeft, FiUserPlus } from "react-icons/fi";
 
 export default function RegisterUserPage() {
@@ -14,11 +15,29 @@ export default function RegisterUserPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"aluno" | "docente">("aluno"); // Novo estado para o cargo
+  const [role, setRole] = useState<"aluno" | "docente">("aluno");
+
+  // Estado para a sala selecionada e lista de salas
+  const [classes, setClasses] = useState<any[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<string>("");
 
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Busca as salas/turmas disponíveis ao carregar
+  useEffect(() => {
+    async function fetchClasses() {
+      try {
+        const response = await api.get("/classes", { headers: authHeaders() });
+        setClasses(Array.isArray(response.data) ? response.data : []);
+      } catch (err) {
+        console.error("Erro ao carregar turmas:", err);
+      }
+    }
+
+    fetchClasses();
+  }, []);
 
   const handleRegisterUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,32 +73,51 @@ export default function RegisterUserPage() {
     try {
       setLoading(true);
 
-      const token = localStorage.getItem("@token") || localStorage.getItem("@session") || localStorage.getItem("token");
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const headers = authHeaders();
+      const apiRole = role === "docente" ? "professor" : role;
 
-      // Chamada para a rota de cadastro no backend (com o cargo e e-mail validados)
-      await api.post("/user-register", {
+      const response = await api.post("/user-register", {
         name,
         email: trimmedEmail,
         password,
-        role, // Enviando também o cargo selecionado
+        role: apiRole,
       }, { headers });
 
+      const createdUser = response.data;
+      const createdUserId = createdUser?.id || createdUser?.id_usuario;
+
+      if (selectedClassId && createdUserId) {
+        try {
+          await api.post("/class/join", {
+            code: Number(selectedClassId),
+            targetUser: Number(createdUserId),
+          }, { headers });
+        } catch (joinErr) {
+          console.error("Erro ao vincular sala ao usuário:", joinErr);
+          setSuccessMessage(
+            "Usuário cadastrado, mas não foi possível vincular à sala. Use a coordenação para fazer o vínculo.",
+          );
+          setName("");
+          setEmail("");
+          setPassword("");
+          setRole("aluno");
+          setSelectedClassId("");
+          return;
+        }
+      }
+
       setSuccessMessage("Usuário cadastrado com sucesso!");
-      
+
       // Limpa o formulário
       setName("");
       setEmail("");
       setPassword("");
       setRole("aluno");
-
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 2000);
+      setSelectedClassId("");
 
     } catch (err: any) {
       console.error("Erro ao cadastrar usuário:", err);
-      
+
       if (err.response?.status === 401 || err.response?.status === 403) {
         setErrorMessage("Acesso negado. Você precisa estar autenticado como coordenador.");
         return;
@@ -98,7 +136,7 @@ export default function RegisterUserPage() {
   return (
     <div className={styles.overlay}>
       <div className={styles.modalContainer}>
-        
+
         <Link href="/coordination" className={styles.backButton}>
           <FiArrowLeft /> Voltar para o Dashboard
         </Link>
@@ -109,7 +147,7 @@ export default function RegisterUserPage() {
         </div>
 
         <form onSubmit={handleRegisterUser} className={styles.form}>
-          
+
           {/* Seleção de Cargo (Select) */}
           <div className={styles.fieldGroup}>
             <label htmlFor="role">
@@ -133,6 +171,36 @@ export default function RegisterUserPage() {
             >
               <option value="aluno">Aluno</option>
               <option value="docente">Docente</option>
+            </select>
+          </div>
+
+          {/* Seleção de Sala / Turma (Select) */}
+          <div className={styles.fieldGroup}>
+            <label htmlFor="classId">
+              SALA / TURMA
+            </label>
+            <select
+              id="classId"
+              value={selectedClassId}
+              onChange={(e) => setSelectedClassId(e.target.value)}
+              style={{
+                backgroundColor: "#1e293b",
+                border: "1px solid #334155",
+                borderRadius: "8px",
+                padding: "0.875rem 1rem",
+                color: "#f8fafc",
+                fontSize: "0.95rem",
+                outline: "none",
+                width: "100%",
+                cursor: "pointer"
+              }}
+            >
+              <option value="">Selecione uma sala (opcional)...</option>
+              {classes.map((cls: any) => (
+                <option key={cls.id} value={cls.id}>
+                  {cls.nome || `Turma #${cls.id} (Conclusão: ${cls.anoEncerramento})`}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -188,7 +256,7 @@ export default function RegisterUserPage() {
             <button
               type="button"
               className={styles.cancelBtn}
-              onClick={() => router.push("/dashboard")}
+              onClick={() => router.push("/coordination")}
               disabled={loading}
             >
               Cancelar

@@ -3,21 +3,19 @@ import { UpdateProjectService } from "../../services/project/UpdateProjectServic
 
 export class UpdateProjectController {
   async handle(req: Request, res: Response) {
-    const creatorRole = req.user_role;
-
-    const { projectId, title, description, term, tokenGithub } = req.body;
+    const { id } = req.params; // Lembre-se: req.params.id vem como string ("8")
+    const { tituloProjeto, descricao, prazo, tokenGithub } = req.body;
 
     const updateProjectService = new UpdateProjectService();
 
     const project = await updateProjectService.execute({
-      creatorRole,
-      projectId,
-      title,
-      description,
-      term,
+      id: Number(id), // 👈 CONVERTA AQUI PARA NUMBER
+      tituloProjeto,
+      descricao,
+      prazo,
       tokenGithub,
     });
 
-    return res.status(200).json({ project });
+    return res.json(project);
   }
 }
