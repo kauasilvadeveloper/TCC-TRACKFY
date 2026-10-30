@@ -401,6 +401,7 @@ export default function ProjectDashboardPage() {
           tituloSprint: newSprintTitle.trim(),
           prazoSprint: new Date(newSprintDeadline + "T23:59:59").toISOString(),
           descricaoSprint: newSprintDesc.trim() || undefined,
+          projetoId: project.id,
         },
         { headers: authHeaders() },
       );
@@ -655,9 +656,13 @@ export default function ProjectDashboardPage() {
   const [editProjectDesc, setEditProjectDesc] = useState(
     project?.description || project?.descricao || "",
   );
+  const [editProjectToken, setEditProjectToken] = useState(
+    project?.token_github || project?.token || "",
+  );
   const [editProjectDeadline, setEditProjectDeadline] = useState(
     toInputDate(project?.prazo || project?.term),
   );
+
   const [isSubmittingProjectEdit, setIsSubmittingProjectEdit] = useState(false);
   const [isSubmittingInvite, setIsSubmittingInvite] = useState(false);
   const [confirmDeleteProject, setConfirmDeleteProject] = useState(false);
@@ -694,7 +699,7 @@ export default function ProjectDashboardPage() {
         tituloProjeto: editProjectTitle.trim(),
         descricao: editProjectDesc.trim() || null,
         prazo: formattedTerm,
-        tokenGithub: project?.tokenGithub || null,
+        tokenGithub: editProjectToken || null,
       };
 
       const res = await api.patch(`/project/${projectId}`, payload, {
@@ -1609,8 +1614,8 @@ export default function ProjectDashboardPage() {
                       <label className={styles.label}>Token github ℹ️</label>
                       <textarea
                         className={styles.textarea}
-                        value={editProjectDesc}
-                        onChange={(e) => setEditProjectDesc(e.target.value)}
+                        value={editProjectToken}
+                        onChange={(e) => setEditProjectToken(e.target.value)}
                       />
                     </div>
                     <div className={styles.formGroup}>
