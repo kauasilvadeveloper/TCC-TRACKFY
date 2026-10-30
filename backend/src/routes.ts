@@ -44,6 +44,7 @@ import { ReopenSprintController } from "./controllers/sprint/ReopenSprintControl
 import { UpdateSprintController } from "./controllers/sprint/UpdateSprintController";
 import { GetGithubCommitsController } from "./controllers/project/GetGithubCommitsController";
 import { GetAllUsersController } from "./controllers/auth/GetAllUsersController";
+import { GetSprintsByProjectController } from "./controllers/sprint/GetSprintByProjectController";
 // import { GetSprintsByProjectController } from "./controllers/sprint/GetSprintByProjectController";
 
 const router = Router();
@@ -164,11 +165,11 @@ router.get(
   isAuthenticated,
   new GetTasksBySprintController().handle,
 );
-// router.get(
-//   "/sprint/project/:projectId",
-//   isAuthenticated,
-//   new GetSprintsByProjectController().handle,
-// );
+router.get(
+  "/sprint/project/:projectId",
+  isAuthenticated,
+  new GetSprintsByProjectController().handle,
+);
 router.patch(
   "/sprint/reopen",
   isAuthenticated,

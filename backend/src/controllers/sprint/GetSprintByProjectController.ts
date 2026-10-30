@@ -13,9 +13,10 @@ export class GetSprintsByProjectController {
           error: "O ID do projeto deve ser um número inteiro válido.",
         });
       }
+      const getSprintByProjectController = new GetSprintsByProjectService();
 
-      const getSprintByProjectService = new GetSprintsByProjectService();
-      const sprints = await getSprintByProjectService.execute(parsedProjectId);
+      const sprints =
+        await getSprintByProjectController.execute(parsedProjectId);
 
       return res.status(200).json(sprints);
     } catch (error) {

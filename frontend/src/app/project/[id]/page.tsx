@@ -101,7 +101,9 @@ export default function ProjectDashboardPage() {
   const [newTaskStatus, setNewTaskStatus] = useState("Pendente");
   const [newTaskSprintId, setNewTaskSprintId] = useState("");
   const [newTaskMemberIds, setNewTaskMemberIds] = useState<number[]>([]);
-  const [taskCreateDateErr, setTaskCreateDateErr] = useState<string | null>(null);
+  const [taskCreateDateErr, setTaskCreateDateErr] = useState<string | null>(
+    null,
+  );
   const [isSubmittingTask, setIsSubmittingTask] = useState(false);
 
   // ── Sprint Detail Modal
@@ -110,13 +112,17 @@ export default function ProjectDashboardPage() {
   const [editSprintTitle, setEditSprintTitle] = useState("");
   const [editSprintDeadline, setEditSprintDeadline] = useState("");
   const [editSprintDesc, setEditSprintDesc] = useState("");
-  const [editSprintDateErr, setEditSprintDateErr] = useState<string | null>(null);
+  const [editSprintDateErr, setEditSprintDateErr] = useState<string | null>(
+    null,
+  );
   const [isSubmittingSprintEdit, setIsSubmittingSprintEdit] = useState(false);
 
   // ── Task Detail Modal
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
-  const [taskDetailTab, setTaskDetailTab] = useState<"details" | "comments">("details");
+  const [taskDetailTab, setTaskDetailTab] = useState<"details" | "comments">(
+    "details",
+  );
   const [editTaskTitle, setEditTaskTitle] = useState("");
   const [editTaskDesc, setEditTaskDesc] = useState("");
   const [editTaskDeadline, setEditTaskDeadline] = useState("");
@@ -179,7 +185,8 @@ export default function ProjectDashboardPage() {
     return s?.prazoSprint ? toInputDate(s.prazoSprint) : "";
   };
 
-  const getToken = () => Cookies.get("trackfy_token") || localStorage.getItem("trackfy_token") || "";
+  const getToken = () =>
+    Cookies.get("trackfy_token") || localStorage.getItem("trackfy_token") || "";
   const authHeaders = () => ({ Authorization: `Bearer ${getToken()}` });
 
   // ─── Role detection ────────────────────────────────────────────────────────
@@ -188,8 +195,14 @@ export default function ProjectDashboardPage() {
     if (raw) {
       try {
         const p = JSON.parse(raw);
-        setUserRole(p.cargoEscola || p.role || p.user?.role || p.user?.cargoEscola || "aluno");
-      } catch { }
+        setUserRole(
+          p.cargoEscola ||
+            p.role ||
+            p.user?.role ||
+            p.user?.cargoEscola ||
+            "aluno",
+        );
+      } catch {}
     }
   }, []);
 
@@ -213,7 +226,9 @@ export default function ProjectDashboardPage() {
 
         try {
           const kRes = await api.get(`/kanban/${projectId}`, { headers: h });
-          const kanbansList = Array.isArray(kRes.data) ? kRes.data : [kRes.data];
+          const kanbansList = Array.isArray(kRes.data)
+            ? kRes.data
+            : [kRes.data];
           setKanbans(kanbansList);
 
           if (kanbansList.length > 0) {
@@ -227,8 +242,8 @@ export default function ProjectDashboardPage() {
                   ...t,
                   fkColuna: col.id,
                   colunaNome: col.tituloColuna,
-                }))
-              )
+                })),
+              ),
             );
             setTasks(allTasks);
           }
@@ -272,7 +287,7 @@ export default function ProjectDashboardPage() {
                   kanbans: [...(p?.kanbans || []), fullKanban],
                 }));
               }
-            } catch { }
+            } catch {}
           }
         }
       } catch (err: any) {
@@ -292,7 +307,9 @@ export default function ProjectDashboardPage() {
   // ─── Troca de Kanban no Visualizador ───────────────────────────────────────
   const handleSelectKanban = (kanbanId: number) => {
     setCurrentKanbanId(kanbanId);
-    const selectedK = kanbans.find((k: any) => Number(k.id) === Number(kanbanId));
+    const selectedK = kanbans.find(
+      (k: any) => Number(k.id) === Number(kanbanId),
+    );
     setColumns(selectedK?.colunas || []);
   };
 
@@ -303,7 +320,9 @@ export default function ProjectDashboardPage() {
 
     if (!draggingTaskId || !targetCol?.id) return;
 
-    const task = tasks.find((t: any) => String(t.id) === String(draggingTaskId));
+    const task = tasks.find(
+      (t: any) => String(t.id) === String(draggingTaskId),
+    );
 
     // Se a tarefa não existir ou já estiver na mesma coluna, cancela a ação
     if (!task || String(task.fkColuna) === String(targetCol.id)) {
@@ -312,7 +331,8 @@ export default function ProjectDashboardPage() {
     }
 
     // Define o novo status como o título exato da coluna destino ("A fazer", "Em andamento", "Concluído", etc.)
-    const newStatusName = targetCol.tituloColuna || targetCol.nome || targetCol.title;
+    const newStatusName =
+      targetCol.tituloColuna || targetCol.nome || targetCol.title;
     const targetColumnIdNum = Number(targetCol.id);
 
     const prevTasks = [...tasks];
@@ -322,13 +342,13 @@ export default function ProjectDashboardPage() {
       ts.map((t: any) =>
         String(t.id) === String(draggingTaskId)
           ? {
-            ...t,
-            fkColuna: targetColumnIdNum,
-            colunaNome: newStatusName,
-            status: newStatusName, // Atualiza o status conforme a coluna
-          }
-          : t
-      )
+              ...t,
+              fkColuna: targetColumnIdNum,
+              colunaNome: newStatusName,
+              status: newStatusName, // Atualiza o status conforme a coluna
+            }
+          : t,
+      ),
     );
 
     // 2. Sincronização com a API Backend
@@ -349,7 +369,10 @@ export default function ProjectDashboardPage() {
         await api.patch(`/task/${draggingTaskId}`, payload, { headers });
       }
     } catch (err) {
-      console.error("Erro ao atualizar status e coluna no banco de dados:", err);
+      console.error(
+        "Erro ao atualizar status e coluna no banco de dados:",
+        err,
+      );
       setTasks(prevTasks); // Reverte para o estado anterior em caso de erro na requisição
       alert("Não foi possível salvar o novo status da tarefa no servidor.");
     } finally {
@@ -381,6 +404,7 @@ export default function ProjectDashboardPage() {
         },
         { headers: authHeaders() },
       );
+
       setSprints((p) => [...p, res.data]);
       setNewSprintTitle("");
       setNewSprintDeadline("");
@@ -462,7 +486,9 @@ export default function ProjectDashboardPage() {
       !newTaskColumnId ||
       taskCreateDateErr
     ) {
-      alert("Preencha todos os campos obrigatórios (incluindo Kanban, Coluna, Sprint e Prazo).");
+      alert(
+        "Preencha todos os campos obrigatórios (incluindo Kanban, Coluna, Sprint e Prazo).",
+      );
       return;
     }
 
@@ -470,8 +496,12 @@ export default function ProjectDashboardPage() {
       setIsSubmittingTask(true);
 
       // Busca a coluna selecionada para definir o status inicial correto
-      const targetKanban = kanbans.find((k: any) => Number(k.id) === Number(selectedKanbanId));
-      const targetCol = (targetKanban?.colunas || columns).find((c: any) => Number(c.id) === Number(newTaskColumnId));
+      const targetKanban = kanbans.find(
+        (k: any) => Number(k.id) === Number(selectedKanbanId),
+      );
+      const targetCol = (targetKanban?.colunas || columns).find(
+        (c: any) => Number(c.id) === Number(newTaskColumnId),
+      );
       const initialStatus = targetCol?.tituloColuna || newTaskStatus;
 
       const res = await api.post(
@@ -687,7 +717,7 @@ export default function ProjectDashboardPage() {
       console.error("Erro ao atualizar projeto:", err);
       alert(
         err.response?.data?.message ||
-        "Erro ao atualizar o projeto. Verifique o backend.",
+          "Erro ao atualizar o projeto. Verifique o backend.",
       );
     } finally {
       setIsSubmittingProjectEdit(false);
@@ -736,10 +766,10 @@ export default function ProjectDashboardPage() {
           const rawMembers: any[] = Array.isArray(res.data)
             ? res.data
             : res.data.users ||
-            res.data.usuarios ||
-            res.data.alunos ||
-            res.data.members ||
-            [];
+              res.data.usuarios ||
+              res.data.alunos ||
+              res.data.members ||
+              [];
 
           rawMembers.forEach((item) => {
             const userObj = item.usuario || item.user || item.aluno || item;
@@ -813,7 +843,9 @@ export default function ProjectDashboardPage() {
       }
 
       if (!currentUserId) {
-        alert("Sessão inválida. Não foi possível obter o ID do usuário logado.");
+        alert(
+          "Sessão inválida. Não foi possível obter o ID do usuário logado.",
+        );
         return;
       }
 
@@ -838,7 +870,7 @@ export default function ProjectDashboardPage() {
       } else {
         alert(
           err.response?.data?.message ||
-          "Ocorreu um erro ao adicionar o membro.",
+            "Ocorreu um erro ao adicionar o membro.",
         );
       }
     } finally {
@@ -894,7 +926,7 @@ export default function ProjectDashboardPage() {
       console.error("Erro ao deletar projeto:", err);
       alert(
         err.response?.data?.message ||
-        "Erro ao deletar o projeto. Verifique se possui permissão.",
+          "Erro ao deletar o projeto. Verifique se possui permissão.",
       );
     } finally {
       setIsDeletingProject(false);
@@ -1023,7 +1055,8 @@ export default function ProjectDashboardPage() {
       setNewTaskSprintId(String(sprints[0].id));
     }
     if (kanbans.length > 0) {
-      const activeK = kanbans.find((k: any) => k.id === currentKanbanId) || kanbans[0];
+      const activeK =
+        kanbans.find((k: any) => k.id === currentKanbanId) || kanbans[0];
       setSelectedKanbanId(String(activeK.id));
       if (activeK.colunas?.length > 0) {
         setNewTaskColumnId(String(activeK.colunas[0].id));
@@ -1175,7 +1208,9 @@ export default function ProjectDashboardPage() {
                     <select
                       className={styles.kanbanSelect}
                       value={currentKanbanId || ""}
-                      onChange={(e) => handleSelectKanban(Number(e.target.value))}
+                      onChange={(e) =>
+                        handleSelectKanban(Number(e.target.value))
+                      }
                     >
                       {kanbans.length === 0 ? (
                         <option value="">Quadro Principal</option>
@@ -1497,10 +1532,19 @@ export default function ProjectDashboardPage() {
                       )}
                       <div className={styles.kanbanGalleryMeta}>
                         <span>
-                          <FiLayers size={13} /> {(k.colunas || []).length} colunas
+                          <FiLayers size={13} /> {(k.colunas || []).length}{" "}
+                          colunas
                         </span>
                         <span>
-                          <FiCheckSquare size={13} /> {tasks.filter(t => (k.colunas || []).some((c: any) => c.id === t.fkColuna)).length} tarefas
+                          <FiCheckSquare size={13} />{" "}
+                          {
+                            tasks.filter((t) =>
+                              (k.colunas || []).some(
+                                (c: any) => c.id === t.fkColuna,
+                              ),
+                            ).length
+                          }{" "}
+                          tarefas
                         </span>
                       </div>
                       <button
@@ -1870,8 +1914,9 @@ export default function ProjectDashboardPage() {
                         : "Selecione a Coluna..."}
                     </option>
                     {(
-                      kanbans.find((k: any) => Number(k.id) === Number(selectedKanbanId))
-                        ?.colunas || columns
+                      kanbans.find(
+                        (k: any) => Number(k.id) === Number(selectedKanbanId),
+                      )?.colunas || columns
                     ).map((c: any) => (
                       <option key={c.id} value={c.id}>
                         {c.tituloColuna}
@@ -1889,8 +1934,9 @@ export default function ProjectDashboardPage() {
                   </label>
                   <input
                     type="date"
-                    className={`${styles.input} ${taskCreateDateErr ? styles.inputError : ""
-                      }`}
+                    className={`${styles.input} ${
+                      taskCreateDateErr ? styles.inputError : ""
+                    }`}
                     value={newTaskDeadline}
                     onChange={(e) => onTaskDeadlineChange(e.target.value)}
                     max={
@@ -2325,12 +2371,12 @@ export default function ProjectDashboardPage() {
                           c.commit?.author?.date || c.commit?.committer?.date;
                         const dateFormatted = rawDate
                           ? new Date(rawDate).toLocaleDateString("pt-BR", {
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "2-digit",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "2-digit",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
                           : "";
 
                         return (

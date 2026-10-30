@@ -6,6 +6,7 @@ interface CreateSprintDTO {
   tituloSprint: string;
   descricaoSprint?: string;
   prazoSprint: Date;
+  projetoId: number;
 }
 
 export class CreateSprintService {
@@ -14,6 +15,7 @@ export class CreateSprintService {
     tituloSprint,
     descricaoSprint,
     prazoSprint,
+    projetoId,
   }: CreateSprintDTO) {
     const allowedRoles = ["aluno", "professor"];
     if (!creatorRole || !allowedRoles.includes(creatorRole.toLowerCase())) {
@@ -28,6 +30,13 @@ export class CreateSprintService {
         tituloSprint,
         descricaoSprint,
         prazoSprint,
+      },
+    });
+
+    await prisma.projetoSprint.create({
+      data: {
+        fkProjeto: projetoId,
+        fkSprint: sprint.id,
       },
     });
 
