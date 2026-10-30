@@ -17,32 +17,6 @@ export const mockHeroStats: DashboardHeroStat[] = [
   { rotulo: "Membros na Equipe", valor: 8, icone: "users" },
 ];
 
-export const mockShortcuts: DashboardShortcut[] = [
-  {
-    id: "projetos",
-    titulo: "Projetos",
-    descricao: "Acesse seus projetos rapidamente",
-    icone: "folder",
-  },
-  {
-    id: "tarefas",
-    titulo: "Tarefas",
-    descricao: "Gerencie suas tarefas pendentes",
-    icone: "check",
-  },
-  {
-    id: "relatorios",
-    titulo: "Relatórios",
-    descricao: "Métricas e relatórios de desempenho",
-    icone: "chart",
-  },
-  {
-    id: "equipe",
-    titulo: "Equipe",
-    descricao: "Pessoas e produtividade da equipe",
-    icone: "users",
-  },
-];
 
 export const mockProjects: DashboardProject[] = [
   {

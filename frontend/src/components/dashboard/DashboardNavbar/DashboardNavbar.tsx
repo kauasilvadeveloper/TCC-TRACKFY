@@ -46,7 +46,7 @@ export function DashboardNavbar() {
             <span className={styles.logoIcon}>▼</span>
             <span className={styles.brandName}>Trackfy</span>
           </Link>
-          <span className={styles.alphaBadge}>Alpha</span>
+
 
           <nav aria-label="Navegação Principal">
             <ul className={styles.navLinks}>
@@ -79,18 +79,6 @@ export function DashboardNavbar() {
 
         {/* Right Section: Search, Theme Toggle, Notification & Profile */}
         <div className={styles.rightSection}>
-          <div className={styles.searchWrapper}>
-            <span className={styles.searchIcon} aria-hidden="true">
-              🔍
-            </span>
-            <input
-              type="text"
-              placeholder="Buscar projeto..."
-              aria-label="Buscar projeto"
-              className={styles.searchInput}
-            />
-            <kbd className={styles.shortcutKey}>⌘K</kbd>
-          </div>
 
           {/* Theme Toggle Button */}
           <button
@@ -101,17 +89,6 @@ export function DashboardNavbar() {
             title={`Modo ${theme === "dark" ? "claro" : "escuro"}`}
           >
             {theme === "dark" ? "☀️" : "🌙"}
-          </button>
-
-          {/* Notifications Button */}
-          <button
-            type="button"
-            className={styles.iconButton}
-            aria-label="Notificações"
-            title="Notificações"
-          >
-            🔔
-            <span className={styles.notificationDot} />
           </button>
 
           {/* User Profile & Dropdown */}

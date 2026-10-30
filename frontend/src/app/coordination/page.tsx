@@ -107,7 +107,7 @@ export default function CoordinationPage() {
     try {
       setSubmittingClass(true);
 
-      const token = localStorage.getItem("trackfy_theme") || "";
+      const token = localStorage.getItem("trackfy_token") || "";
       if (!token) {
         alert("Sessão expirada. Faça login novamente.");
         return;

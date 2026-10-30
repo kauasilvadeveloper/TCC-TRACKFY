@@ -42,36 +42,6 @@ export function DashboardHero() {
             em uma experiência única para você saber o que está acontecendo e o que
             precisa acontecer depois.
           </p>
-
-          <div className={styles.actionRow}>
-            <button
-              type="button"
-              className={styles.primaryBtn}
-              aria-label="Criar novo projeto"
-            >
-              <span>+</span>
-              <span>Criar novo projeto</span>
-            </button>
-
-            <a href="#tarefas" className={styles.secondaryBtn}>
-              <span>Ver minhas tarefas</span>
-              <span aria-hidden="true">→</span>
-            </a>
-          </div>
-
-          <div className={styles.statsRow}>
-            {heroStats.map((stat, index) => (
-              <div key={index} className={styles.statItem}>
-                <span className={styles.statIcon} aria-hidden="true">
-                  {getIcon(stat.icone)}
-                </span>
-                <span>
-                  <strong className={styles.statNumber}>{stat.valor}</strong>{" "}
-                  {stat.rotulo}
-                </span>
-              </div>
-            ))}
-          </div>
         </div>
 
         {/* Right Column: Interactive System Preview Window */}
@@ -95,21 +65,6 @@ export function DashboardHero() {
               <span className={styles.sprintBadge}>Sprint 03</span>
             </div>
 
-            <div className={styles.mockupMetrics}>
-              <div className={styles.metricBox}>
-                <div className={styles.metricNum}>12</div>
-                <div className={styles.metricLabel}>Tarefas Concluídas</div>
-              </div>
-              <div className={styles.metricBox}>
-                <div className={styles.metricNum}>47</div>
-                <div className={styles.metricLabel}>Em Aberto</div>
-              </div>
-              <div className={styles.metricBox}>
-                <div className={styles.metricNum}>6</div>
-                <div className={styles.metricLabel}>Membros Ativos</div>
-              </div>
-            </div>
-
             <div className={styles.chartContainer}>
               <div className={styles.chartHeader}>
                 <h4>Atividade Semanal da Sprint</h4>
@@ -121,9 +76,8 @@ export function DashboardHero() {
                   <div key={index} className={styles.barCol}>
                     <div className={styles.barTrack}>
                       <div
-                        className={`${styles.barFill} ${
-                          point.alturaPct >= 90 ? styles.peak : ""
-                        }`}
+                        className={`${styles.barFill} ${point.alturaPct >= 90 ? styles.peak : ""
+                          }`}
                         style={{ height: `${point.alturaPct}%` }}
                         title={`${point.dia}: ${point.entregas} entregas`}
                       />
