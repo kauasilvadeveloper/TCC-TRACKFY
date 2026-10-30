@@ -247,7 +247,7 @@ export default function RegisterUserPage() {
             <button
               type="button"
               className={styles.cancelBtn}
-              onClick={() => router.push("/dashboard")}
+              onClick={() => router.push("/coordination")}
               disabled={loading}
             >
               Cancelar

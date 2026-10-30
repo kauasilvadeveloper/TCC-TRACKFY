@@ -13,6 +13,7 @@ import {
   FiArrowLeft,
   FiPlus,
   FiX,
+  FiBookOpen,
 } from "react-icons/fi";
 
 export default function CoordinationPage() {
@@ -36,6 +37,12 @@ export default function CoordinationPage() {
   );
   const [submittingClass, setSubmittingClass] = useState(false);
 
+  // Estados do Modal "Detalhes da Turma"
+  const [selectedClassDetails, setSelectedClassDetails] = useState<any | null>(
+    null,
+  );
+  const [isClassDetailsModalOpen, setIsClassDetailsModalOpen] = useState(false);
+
   // Estados para Atribuição Rápida de Aluno à Turma
   const [selectedClassForUser, setSelectedClassForUser] = useState<
     number | null
@@ -46,13 +53,24 @@ export default function CoordinationPage() {
     fetchCoordinationData();
   }, []);
 
-  // Helper para ler o cargo do usuário independentemente do formato do Prisma
+  // Helper flexível para identificar o cargo do usuário
   const getUserCargo = (user: any): string => {
     if (!user) return "";
     const userData = user.usuario || user;
     const cargo =
-      userData.cargoEscola || userData.cargo_escola || userData.cargo || "";
+      userData.cargoEscola ||
+      userData.cargo_escola ||
+      userData.cargo ||
+      userData.role ||
+      "";
     return cargo.toString().toLowerCase().trim();
+  };
+
+  const getClassStudents = (clsUsers: any[]) => {
+    return (clsUsers || []).filter((u: any) => {
+      const c = getUserCargo(u);
+      return c === "aluno" || c === "student";
+    });
   };
 
   // Busca de dados com desaninhamento do Prisma
@@ -76,7 +94,6 @@ export default function CoordinationPage() {
 
       let allUsersMap = new Map<number, any>();
 
-      // Popula o Map com a lista geral de usuários
       systemUsersData.forEach((u: any) => {
         const id = u.id || u.id_usuario || u.fkUsuario;
         if (id) allUsersMap.set(id, u);
@@ -102,11 +119,9 @@ export default function CoordinationPage() {
 
           const unwrappedUsers = rawClassUsers.map((u: any) => {
             const userObj = u.usuario || u;
-            // Suporta id, id_usuario e fkUsuario
             const userId =
               userObj.id || userObj.id_usuario || userObj.fkUsuario;
 
-            // Se tiver apenas o vínculo (fkUsuario), recupera o cadastro completo do Map geral
             if (allUsersMap.has(userId)) {
               return allUsersMap.get(userId);
             }
@@ -139,7 +154,7 @@ export default function CoordinationPage() {
     }
   }
 
-  // Criação da turma enviando ambos os formatos para compatibilidade
+  // Criação da turma
   const handleCreateClass = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -152,7 +167,7 @@ export default function CoordinationPage() {
       setSubmittingClass(true);
 
       const token = Cookies.get("trackfy_token");
-      const user = JSON.parse(Cookies.get("trackfy_user") || "");
+      const user = JSON.parse(Cookies.get("trackfy_user") || "{}");
 
       if (!token) {
         alert("Sessão expirada. Faça login novamente.");
@@ -222,7 +237,6 @@ export default function CoordinationPage() {
   };
 
   // Listas filtradas por cargo
-  // Listas filtradas por cargo
   const studentsList = users.filter((u) => {
     const cargo = getUserCargo(u);
     return cargo === "aluno" || cargo === "student";
@@ -230,7 +244,10 @@ export default function CoordinationPage() {
 
   const teachersList = users.filter((u) => {
     const cargo = getUserCargo(u);
-    return cargo === "docente" || cargo === "professor" || cargo === "teacher";
+    return (
+      !cargo.includes("coord") &&
+      (cargo.includes("prof") || cargo.includes("docen") || cargo.includes("teach"))
+    );
   });
 
   // Filtro da tabela de usuários
@@ -249,7 +266,10 @@ export default function CoordinationPage() {
     if (activeTab === "docentes") {
       return (
         matchesSearch &&
-        (cargo === "docente" || cargo === "professor" || cargo === "teacher")
+        !cargo.includes("coord") &&
+        (cargo.includes("prof") ||
+          cargo.includes("docen") ||
+          cargo.includes("teach"))
       );
     }
 
@@ -386,7 +406,14 @@ export default function CoordinationPage() {
                 }).length;
 
                 return (
-                  <div key={cls.id} className={styles.classCard}>
+                  <div
+                    key={cls.id}
+                    className={styles.classCard}
+                    onClick={() => {
+                      setSelectedClassDetails(cls);
+                      setIsClassDetailsModalOpen(true);
+                    }}
+                  >
                     <div className={styles.cardHeader}>
                       <div className={styles.badge}>{letterBadge}</div>
                       <div className={styles.titleGroup}>
@@ -406,7 +433,10 @@ export default function CoordinationPage() {
                       </div>
                     </div>
 
-                    <div className={styles.cardFooter}>
+                    <div
+                      className={styles.cardFooter}
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       {selectedClassForUser === cls.id ? (
                         <div className={styles.quickAssignBox}>
                           <select
@@ -566,6 +596,94 @@ export default function CoordinationPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Detalhes da Turma (Apenas Alunos) */}
+      {isClassDetailsModalOpen && selectedClassDetails && (
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setIsClassDetailsModalOpen(false)}
+        >
+          <div
+            className={`${styles.modalCard} ${styles.classDetailsModalCard}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.modalHeader}>
+              <h2>
+                Detalhes da Turma - Conclusão{" "}
+                {selectedClassDetails.anoEncerramento}
+              </h2>
+              <button
+                onClick={() => setIsClassDetailsModalOpen(false)}
+                className={styles.closeBtn}
+              >
+                <FiX />
+              </button>
+            </div>
+
+            <div className={styles.classDetailsBody}>
+              {/* Seção Lista de Alunos */}
+              <div className={styles.detailSection}>
+                <div className={styles.sectionHeaderRow}>
+                  <span className={styles.sectionLabel}>
+                    ALUNOS MATRICULADOS
+                  </span>
+                  <span className={styles.studentBadgeCount}>
+                    {getClassStudents(selectedClassDetails.users || []).length}{" "}
+                    alunos
+                  </span>
+                </div>
+
+                <div className={styles.studentsListContainer}>
+                  {getClassStudents(selectedClassDetails.users || []).length ===
+                    0 ? (
+                    <p className={styles.emptyStudentsText}>
+                      Nenhum aluno vinculado a esta turma.
+                    </p>
+                  ) : (
+                    getClassStudents(selectedClassDetails.users || []).map(
+                      (student: any, idx: number) => {
+                        const sName = student.nome || student.name || "Aluno";
+                        const nameParts = sName.trim().split(" ");
+                        const initials =
+                          nameParts.length > 1
+                            ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase()
+                            : sName.substring(0, 2).toUpperCase();
+
+                        return (
+                          <div
+                            key={student.id || idx}
+                            className={styles.studentItem}
+                          >
+                            <span className={styles.studentAvatar}>
+                              {initials}
+                            </span>
+                            <div className={styles.studentInfo}>
+                              <span className={styles.studentName}>{sName}</span>
+                              <span className={styles.studentEmail}>
+                                {student.email}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      },
+                    )
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.modalFooterDetails}>
+              <button
+                type="button"
+                className={styles.submitBtn}
+                onClick={() => setIsClassDetailsModalOpen(false)}
+              >
+                Fechar
+              </button>
+            </div>
           </div>
         </div>
       )}

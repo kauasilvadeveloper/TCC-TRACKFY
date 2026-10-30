@@ -563,11 +563,9 @@
       width: 44px;
       height: 44px;
       border-radius: 10px;
-      background: linear-gradient(
-        135deg,
-        rgba(59, 130, 246, 0.2),
-        rgba(59, 130, 246, 0.05)
-      );
+      background: linear-gradient(135deg,
+          rgba(59, 130, 246, 0.2),
+          rgba(59, 130, 246, 0.05));
       color: #60a5fa;
       border: 1px solid rgba(59, 130, 246, 0.3);
       display: flex;
@@ -720,6 +718,189 @@
           background-color: rgba(239, 68, 68, 0.1);
         }
       }
+    }
+  }
+}
+
+/* --- MODAL DETALHES DA TURMA --- */
+.classDetailsModalCard {
+  max-width: 520px;
+}
+
+.classDetailsBody {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.detailSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+
+  .sectionLabel {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #64748b;
+    text-transform: uppercase;
+  }
+
+  .sectionHeaderRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .studentBadgeCount {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #3b82f6;
+      background-color: rgba(59, 130, 246, 0.1);
+      padding: 0.15rem 0.6rem;
+      border-radius: 12px;
+      border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+  }
+}
+
+.teacherInfoCard {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  background-color: #0e1628;
+  border: 1px solid #1a253a;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+
+  .teacherAvatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background-color: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+
+  .teacherText {
+    display: flex;
+    flex-direction: column;
+
+    strong {
+      color: #f8fafc;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+  }
+}
+
+.studentsListContainer {
+  max-height: 250px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-right: 0.35rem;
+
+  &::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #0b1120;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #1e293b;
+    border-radius: 4px;
+
+    &:hover {
+      background: #334155;
+    }
+  }
+}
+
+.studentItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background-color: #0e1628;
+  border: 1px solid #1a253a;
+  border-radius: 8px;
+  padding: 0.65rem 0.85rem;
+  transition: border-color 0.2s ease;
+
+  &:hover {
+    border-color: #334155;
+  }
+
+  .studentAvatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #3b82f6;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .studentInfo {
+    display: flex;
+    flex-direction: column;
+
+    .studentName {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #f8fafc;
+    }
+
+    .studentEmail {
+      font-size: 0.75rem;
+      color: #64748b;
+    }
+  }
+}
+
+.emptyStudentsText {
+  color: #64748b;
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 1.5rem;
+  margin: 0;
+  background-color: #0e1628;
+  border: 1px dashed #1a253a;
+  border-radius: 8px;
+}
+
+.modalFooterDetails {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #162032;
+  display: flex;
+  justify-content: flex-end;
+
+  .submitBtn {
+    background-color: #1e293b;
+    color: #ffffff;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.6rem 1.25rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: #334155;
     }
   }
 }

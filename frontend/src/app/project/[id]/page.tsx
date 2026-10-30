@@ -1560,6 +1560,14 @@ export default function ProjectDashboardPage() {
                       />
                     </div>
                     <div className={styles.formGroup}>
+                      <label className={styles.label}>Token github ℹ️</label>
+                      <textarea
+                        className={styles.textarea}
+                        value={editProjectDesc}
+                        onChange={(e) => setEditProjectDesc(e.target.value)}
+                      />
+                    </div>
+                    <div className={styles.formGroup}>
                       <label className={styles.label}>Prazo do Projeto</label>
                       <input
                         type="date"
