@@ -34,50 +34,6 @@ export function DashboardWorkflow() {
             visualização ágil para não perder nenhuma entrega importante.
           </p>
 
-          <div className={styles.filterTabs} role="tablist" aria-label="Filtro de tarefas">
-            <button
-              type="button"
-              className={`${styles.tabBtn} ${
-                activeFilter === "all" ? styles.active : ""
-              }`}
-              onClick={() => setActiveFilter("all")}
-              role="tab"
-              aria-selected={activeFilter === "all"}
-            >
-              Todas as tarefas
-            </button>
-            <button
-              type="button"
-              className={`${styles.tabBtn} ${
-                activeFilter === "pending" ? styles.active : ""
-              }`}
-              onClick={() => setActiveFilter("pending")}
-              role="tab"
-              aria-selected={activeFilter === "pending"}
-            >
-              Pendentes
-            </button>
-            <button
-              type="button"
-              className={`${styles.tabBtn} ${
-                activeFilter === "done" ? styles.active : ""
-              }`}
-              onClick={() => setActiveFilter("done")}
-              role="tab"
-              aria-selected={activeFilter === "done"}
-            >
-              Finalizadas
-            </button>
-          </div>
-
-          <button
-            type="button"
-            className={styles.actionBtn}
-            aria-label="Abrir quadro de tarefas completo"
-          >
-            <span>Abrir tarefas</span>
-            <span aria-hidden="true">→</span>
-          </button>
         </div>
 
         {/* Right Column: Workflow Board Widget */}

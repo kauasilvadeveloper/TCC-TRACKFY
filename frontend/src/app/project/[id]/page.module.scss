@@ -1210,10 +1210,12 @@ $accent-warning: #f59e0b;
   &::-webkit-scrollbar {
     width: 6px;
   }
+
   &::-webkit-scrollbar-track {
     background: rgba(15, 23, 42, 0.4);
     border-radius: 4px;
   }
+
   &::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.15);
     border-radius: 4px;
@@ -1418,7 +1420,8 @@ $accent-warning: #f59e0b;
   font-family: inherit;
   outline: none;
   transition: all 0.2s ease-in-out;
-  color-scheme: dark; /* Faz o seletor de data e ícones ficarem no tema escuro */
+  color-scheme: dark;
+  /* Faz o seletor de data e ícones ficarem no tema escuro */
 
   &::placeholder {
     color: #64748b;
@@ -1448,6 +1451,7 @@ $accent-warning: #f59e0b;
   &::-webkit-scrollbar {
     width: 6px;
   }
+
   &::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.15);
     border-radius: 4px;
@@ -1463,7 +1467,7 @@ $accent-warning: #f59e0b;
 
 /* ── Botões Customizados ───────────────────────────────────────────────── */
 .primaryActionBtn {
-  width: 100%;
+  width: 200px;
   background: #2563eb;
   color: #ffffff;
   border: none;
@@ -1496,10 +1500,10 @@ $accent-warning: #f59e0b;
 }
 
 .secondaryActionBtn {
-  width: 100%;
-  background: rgba(16, 185, 129, 0.15);
-  color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  width: 50%;
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
   border-radius: 8px;
   padding: 0.75rem 1rem;
   font-size: 0.9rem;
@@ -1510,11 +1514,16 @@ $accent-warning: #f59e0b;
   justify-content: center;
   gap: 0.5rem;
   transition: all 0.2s ease-in-out;
+  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.25);
 
   &:hover:not(:disabled) {
-    background: rgba(16, 185, 129, 0.25);
-    border-color: rgba(16, 185, 129, 0.5);
+    background: #1d4ed8;
     transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
   }
 
   &:disabled {

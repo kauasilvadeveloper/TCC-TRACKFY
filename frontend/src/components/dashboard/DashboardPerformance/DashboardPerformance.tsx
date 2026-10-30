@@ -50,9 +50,8 @@ export function DashboardPerformance() {
                   <div key={index} className={styles.barCol}>
                     <div className={styles.barTrack}>
                       <div
-                        className={`${styles.barFill} ${
-                          point.alturaPct === 100 ? styles.highlight : ""
-                        }`}
+                        className={`${styles.barFill} ${point.alturaPct === 100 ? styles.highlight : ""
+                          }`}
                         style={{ height: `${point.alturaPct}%` }}
                         title={`${point.dia}: ${point.entregas} entregas finalizadas`}
                       />
@@ -77,54 +76,6 @@ export function DashboardPerformance() {
             precisas.
           </p>
 
-          <div
-            className={styles.filterTabs}
-            role="tablist"
-            aria-label="Filtro de período"
-          >
-            <button
-              type="button"
-              className={`${styles.tabBtn} ${
-                period === "7d" ? styles.active : ""
-              }`}
-              onClick={() => setPeriod("7d")}
-              role="tab"
-              aria-selected={period === "7d"}
-            >
-              7 dias
-            </button>
-            <button
-              type="button"
-              className={`${styles.tabBtn} ${
-                period === "14d" ? styles.active : ""
-              }`}
-              onClick={() => setPeriod("14d")}
-              role="tab"
-              aria-selected={period === "14d"}
-            >
-              14 dias
-            </button>
-            <button
-              type="button"
-              className={`${styles.tabBtn} ${
-                period === "month" ? styles.active : ""
-              }`}
-              onClick={() => setPeriod("month")}
-              role="tab"
-              aria-selected={period === "month"}
-            >
-              Este mês
-            </button>
-          </div>
-
-          <button
-            type="button"
-            className={styles.actionBtn}
-            aria-label="Ver relatórios completos de desempenho"
-          >
-            <span>Ver relatórios</span>
-            <span aria-hidden="true">→</span>
-          </button>
         </div>
       </div>
     </section>
