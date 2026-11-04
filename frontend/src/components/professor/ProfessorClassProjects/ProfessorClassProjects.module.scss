@@ -72,6 +72,7 @@
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   overflow: hidden;
+  margin-bottom: 2rem;
 
   &:hover {
     transform: translateY(-3px);
@@ -293,12 +294,10 @@
 
 .skeletonCard {
   min-height: 220px;
-  background: linear-gradient(
-    90deg,
-    var(--bg-card) 25%,
-    var(--bg-input) 50%,
-    var(--bg-card) 75%
-  );
+  background: linear-gradient(90deg,
+      var(--bg-card) 25%,
+      var(--bg-input) 50%,
+      var(--bg-card) 75%);
   background-size: 200% 100%;
   animation: skeletonPulse 1.5s infinite;
 }
@@ -307,8 +306,8 @@
   0% {
     background-position: 200% 0;
   }
+
   100% {
     background-position: -200% 0;
   }
 }
-

@@ -1,7 +1,7 @@
 import axios, { AxiosError } from "axios";
 
 // Utiliza a variável de ambiente ou assume o fallback padrão de desenvolvimento local
-const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://192.168.15.47:8000";
 
 export const api = axios.create({
   baseURL,
