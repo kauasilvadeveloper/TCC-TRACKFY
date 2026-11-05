@@ -21,7 +21,7 @@ export default function LoginPage() {
 
       <div className={styles.bannerSection}>
         <Image
-          src="/public/foto-login.webp"
+          src="/foto-login.webp"
           alt="Equipe trabalhando reunida"
           fill
           priority

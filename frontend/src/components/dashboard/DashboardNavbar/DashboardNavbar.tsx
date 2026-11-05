@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAuth } from "@/src/context/AuthContext";
 import { useTheme } from "@/src/context/ThemeContext";
 import styles from "./DashboardNavbar.module.scss";
+import { Brand } from "../Brand/Brand";
 
 export function DashboardNavbar() {
   const { user, logout } = useAuth();
@@ -42,11 +43,7 @@ export function DashboardNavbar() {
       <div className={styles.container}>
         {/* Left Section: Brand & Nav Links */}
         <div className={styles.leftSection}>
-          <Link href="/dashboard" className={styles.brand}>
-            <span className={styles.logoIcon}>▼</span>
-            <span className={styles.brandName}>Trackfy</span>
-          </Link>
-
+          <Brand />
 
           <nav aria-label="Navegação Principal">
             <ul className={styles.navLinks}>
@@ -79,7 +76,6 @@ export function DashboardNavbar() {
 
         {/* Right Section: Search, Theme Toggle, Notification & Profile */}
         <div className={styles.rightSection}>
-
           {/* Theme Toggle Button */}
           <button
             type="button"
@@ -100,9 +96,7 @@ export function DashboardNavbar() {
               aria-expanded={dropdownOpen}
               aria-haspopup="true"
             >
-              <div className={styles.avatar}>
-                {getInitials(user?.name)}
-              </div>
+              <div className={styles.avatar}>{getInitials(user?.name)}</div>
               <div className={styles.userInfo}>
                 <span className={styles.userName}>
                   {user?.name || "Usuário"}
@@ -119,7 +113,9 @@ export function DashboardNavbar() {
             {dropdownOpen && (
               <div className={styles.dropdownMenu}>
                 <div className={styles.dropdownHeader}>
-                  <p className={styles.dropdownName}>{user?.name || "Usuário"}</p>
+                  <p className={styles.dropdownName}>
+                    {user?.name || "Usuário"}
+                  </p>
                   <p className={styles.dropdownEmail}>{user?.email || ""}</p>
                 </div>
                 <button

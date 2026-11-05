@@ -4,6 +4,7 @@
 import { useState, FormEvent } from "react";
 import { useAuth } from "@/src/context/AuthContext";
 import styles from "./LoginForm.module.scss";
+import { Brand } from "../dashboard/Brand/Brand";
 
 export function LoginForm() {
   const { login, user, isAuthenticated } = useAuth();
@@ -42,11 +43,7 @@ export function LoginForm() {
 
   return (
     <form className={styles.card} onSubmit={handleSubmit}>
-      <div className={styles.logo}>
-        <span className={styles.logoIcon}>▼</span>
-        <h2>Trackfy</h2>
-      </div>
-
+      <Brand />
       <p className={styles.subtitle}>Entre com suas credenciais para acessar</p>
 
       {error && <div className={styles.errorAlert}>{error}</div>}
@@ -66,9 +63,6 @@ export function LoginForm() {
       <div className={styles.field}>
         <div className={styles.labelRow}>
           <label htmlFor="senha">Senha</label>
-          <a href="/recuperar-senha" className={styles.forgot}>
-            Recuperar senha
-          </a>
         </div>
         <div className={styles.inputWrapper}>
           <input
