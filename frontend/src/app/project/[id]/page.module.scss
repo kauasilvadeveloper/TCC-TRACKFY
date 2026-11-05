@@ -395,7 +395,6 @@ $accent-warning: #f59e0b;
         display: inline-flex;
         align-items: center;
         gap: 0.35rem;
-        font-weight: 500;
       }
     }
   }
@@ -424,59 +423,56 @@ $accent-warning: #f59e0b;
       transform: translateY(-2px);
     }
 
-    .taskCardHeader {
-      .taskBadges {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.4rem;
+    .taskBadges {
+      display: flex;
+      gap: 0.4rem;
+      align-items: center;
+
+      .statusBadge {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-weight: 600;
+
+        &.statusPending {
+          background-color: rgba($accent-warning, 0.15);
+          color: $accent-warning;
+          border: 1px solid rgba($accent-warning, 0.3);
+        }
+
+        &.statusProgress {
+          background-color: rgba($primary-blue, 0.15);
+          color: $primary-blue;
+          border: 1px solid rgba($primary-blue, 0.3);
+        }
+
+        &.statusDone {
+          background-color: rgba($accent-green, 0.15);
+          color: $accent-green;
+          border: 1px solid rgba($accent-green, 0.3);
+        }
+      }
+
+      .stackBadge {
+        background-color: #1e293b;
+        color: #cbd5e1;
+        font-size: 0.75rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        display: inline-flex;
         align-items: center;
+        gap: 0.3rem;
+      }
 
-        .statusBadge {
-          font-size: 0.75rem;
-          padding: 0.2rem 0.5rem;
-          border-radius: 4px;
-          font-weight: 600;
-
-          &.statusPending {
-            background-color: rgba($accent-warning, 0.15);
-            color: $accent-warning;
-            border: 1px solid rgba($accent-warning, 0.3);
-          }
-
-          &.statusProgress {
-            background-color: rgba($primary-blue, 0.15);
-            color: $primary-blue;
-            border: 1px solid rgba($primary-blue, 0.3);
-          }
-
-          &.statusDone {
-            background-color: rgba($accent-green, 0.15);
-            color: $accent-green;
-            border: 1px solid rgba($accent-green, 0.3);
-          }
-        }
-
-        .stackBadge {
-          background-color: #1e293b;
-          color: #cbd5e1;
-          font-size: 0.75rem;
-          padding: 0.2rem 0.5rem;
-          border-radius: 4px;
-          display: inline-flex;
-          align-items: center;
-          gap: 0.3rem;
-        }
-
-        .sprintBadge {
-          background-color: rgba(99, 102, 241, 0.15);
-          color: #a5b4fc;
-          font-size: 0.75rem;
-          padding: 0.2rem 0.5rem;
-          border-radius: 4px;
-          display: inline-flex;
-          align-items: center;
-          gap: 0.3rem;
-        }
+      .sprintBadge {
+        background-color: rgba(99, 102, 241, 0.15);
+        color: #a5b4fc;
+        font-size: 0.75rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
       }
     }
 
@@ -707,27 +703,6 @@ $accent-warning: #f59e0b;
         margin-top: 0.5rem;
         padding-top: 1rem;
         border-top: 1px solid $border-color;
-
-        .cancelBtn {
-          background: transparent;
-          border: none;
-          color: $text-secondary;
-          font-weight: 600;
-          font-size: 0.875rem;
-          padding: 0.625rem 1rem;
-          cursor: pointer;
-          border-radius: 6px;
-          transition: color 0.2s;
-
-          &:hover {
-            color: $text-primary;
-          }
-
-          &:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-          }
-        }
 
         .submitBtn {
           background-color: $primary-blue;
@@ -1467,7 +1442,6 @@ $accent-warning: #f59e0b;
 
 /* ── Botões Customizados ───────────────────────────────────────────────── */
 .primaryActionBtn {
-  width: 200px;
   background: #2563eb;
   color: #ffffff;
   border: none;
@@ -1500,7 +1474,7 @@ $accent-warning: #f59e0b;
 }
 
 .secondaryActionBtn {
-  width: 50%;
+  width: 100%;
   background: #2563eb;
   color: #ffffff;
   border: none;
@@ -1564,6 +1538,29 @@ $accent-warning: #f59e0b;
   &:hover:not(:disabled) {
     background: #b91c1c;
     box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.cancelBtn {
+  width: 100%;
+  margin-bottom: 1rem;
+  background: #f1f5f9;
+  border: 1px solid #b91c1c;
+  color: #b91c1c;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.625rem 1rem;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: color 0.2s;
+
+  &:hover {
+    color: $text-primary;
   }
 
   &:disabled {

@@ -28,10 +28,12 @@ export default function LoginPage() {
           className={styles.bgImage}
         />
         <div className={styles.bannerOverlay}>
-          <h1>Gestão de projetos sem complexidade.</h1>
+          <h1>
+            Gestão de projetos <br /> sem complexidade.
+          </h1>
           <p>
-            Rastreie tarefas, colabore em equipe e entregue resultados com total
-            visibilidade.
+            Rastreie tarefas, colabore em equipe e <br /> entregue resultados
+            com total visibilidade.
           </p>
         </div>
       </div>
