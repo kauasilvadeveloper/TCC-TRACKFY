@@ -8,3 +8,4 @@ describe("Frontend Sanity Check", () => {
     expect(screen.getByText("Trackfy Frontend Test Runner")).toBeTruthy();
   });
 });
+

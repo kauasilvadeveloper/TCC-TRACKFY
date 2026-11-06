@@ -22,3 +22,4 @@ describe("CT023 - Bloqueio de login com domínio de e-mail não institucional", 
     );
   });
 });
+

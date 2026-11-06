@@ -68,3 +68,4 @@ describe("CT005 - Criação de tarefa com coluna, sprint e membros", () => {
     expect(prisma.tarefa.create).toHaveBeenCalled();
   });
 });
+

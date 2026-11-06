@@ -36,3 +36,4 @@ describe("CT021 - Tentativa de login com senha incorreta", () => {
     expect(bcrypt.compare).toHaveBeenCalledWith("senhaErrada", mockUser.senha);
   });
 });
+

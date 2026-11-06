@@ -37,3 +37,4 @@ describe("CT024 - Campos obrigatórios (required) no formulário de login", () =
     expect(mockLogin).not.toHaveBeenCalled();
   });
 });
+
