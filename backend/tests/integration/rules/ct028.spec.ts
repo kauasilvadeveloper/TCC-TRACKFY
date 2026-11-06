@@ -34,3 +34,4 @@ describe("CT028 - Validação de integridade: criação de tarefa sem vínculo c
     expect(prisma.tarefa.create).not.toHaveBeenCalled();
   });
 });
+

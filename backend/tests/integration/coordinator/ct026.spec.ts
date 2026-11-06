@@ -40,3 +40,4 @@ describe("CT026 - Bloqueio de cadastro de usuário com e-mail duplicado", () => 
     expect(prisma.usuario.create).not.toHaveBeenCalled();
   });
 });
+

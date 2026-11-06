@@ -29,3 +29,4 @@ describe("CT027 - Controle de Acesso (RBAC): Bloqueio de cadastro por alunos", (
     expect(prisma.usuario.create).not.toHaveBeenCalled();
   });
 });
+

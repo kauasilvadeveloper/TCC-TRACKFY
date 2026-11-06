@@ -34,3 +34,4 @@ describe("CT025 - Validação de campos obrigatórios: tarefa sem título", () =
     expect(prisma.tarefa.create).not.toHaveBeenCalled();
   });
 });
+
