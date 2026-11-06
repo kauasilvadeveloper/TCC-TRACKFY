@@ -65,3 +65,4 @@ describe("CT018 - Vinculação de aluno à turma", () => {
     });
   });
 });
+
