@@ -16,6 +16,7 @@ const config: Config = {
   },
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
+    "^@octokit/rest$": "<rootDir>/tests/mocks/octokit.ts",
   },
   setupFiles: ["<rootDir>/tests/setup-env.ts"],
   clearMocks: true,
