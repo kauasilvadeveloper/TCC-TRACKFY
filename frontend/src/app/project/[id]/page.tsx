@@ -602,9 +602,16 @@ export default function ProjectDashboardPage() {
     async function loadBranches() {
       if (!isTaskDetailOpen || !projectId) return;
 
+      // Guard clause: se o projeto não tiver token configurado, ignora a requisição
+      const githubToken =
+        project?.token_github || project?.tokenGithub || project?.token;
+      if (!githubToken) {
+        setBranches([]);
+        return;
+      }
+
       try {
         setLoadingBranches(true);
-
         const response = await api.get("/project/github/branches", {
           params: { projectId: String(projectId) },
           headers: authHeaders(),
@@ -617,14 +624,16 @@ export default function ProjectDashboardPage() {
 
         setBranches(list);
       } catch (err) {
-        console.error("Erro ao buscar branches:", err);
+        // Falha graciosa: loga o aviso sem interromper a exibição do formulário de detalhes
+        console.warn("Integração do GitHub indisponível no momento:", err);
+        setBranches([]);
       } finally {
         setLoadingBranches(false);
       }
     }
 
     loadBranches();
-  }, [isTaskDetailOpen, projectId]);
+  }, [isTaskDetailOpen, projectId, project]);
 
   const handleBranchChange = async (branchName: string) => {
     setSelectedBranch(branchName);
@@ -2202,7 +2211,7 @@ export default function ProjectDashboardPage() {
             className={`${styles.modalContainer} ${styles.modalLarge}`}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
+            {/* Header do Modal */}
             <div className={styles.modalHeader}>
               <div>
                 <h3 className={styles.modalTitle}>Detalhes da Tarefa</h3>
@@ -2210,9 +2219,7 @@ export default function ProjectDashboardPage() {
                   {selectedTask.tituloTarefa}
                 </p>
               </div>
-              <div
-                style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}
-              >
+              <div className={styles.headerActions}>
                 {isProfessor && (
                   <button
                     type="button"
@@ -2232,7 +2239,31 @@ export default function ProjectDashboardPage() {
               </div>
             </div>
 
-            {/* Details Tab */}
+            {/* ── NAVEGAÇÃO ENTRE ABAS DA TAREFA ────────────────── */}
+            <nav className={styles.tabsNav}>
+              <button
+                type="button"
+                onClick={() => setTaskDetailTab("details")}
+                className={`${styles.tabBtn} ${
+                  taskDetailTab === "details" ? styles.tabBtnActive : ""
+                }`}
+              >
+                <FiEdit2 size={14} /> Detalhes
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setTaskDetailTab("comments")}
+                className={`${styles.tabBtn} ${
+                  taskDetailTab === "comments" ? styles.tabBtnActive : ""
+                }`}
+              >
+                <FiMessageSquare size={14} /> Comentários (
+                {selectedTask.comentarios?.length || 0})
+              </button>
+            </nav>
+
+            {/* Conteúdo da Aba de Detalhes */}
             {taskDetailTab === "details" && (
               <form onSubmit={handleUpdateTask} className={styles.modalForm}>
                 <div className={styles.formGroup}>
@@ -2268,7 +2299,9 @@ export default function ProjectDashboardPage() {
                     </label>
                     <input
                       type="date"
-                      className={`${styles.input} ${editTaskDateErr ? styles.inputError : ""}`}
+                      className={`${styles.input} ${
+                        editTaskDateErr ? styles.inputError : ""
+                      }`}
                       value={editTaskDeadline}
                       onChange={(e) => onEditTaskDeadline(e.target.value)}
                       max={
@@ -2292,12 +2325,16 @@ export default function ProjectDashboardPage() {
                       value={editTaskStack}
                       onChange={(e) => setEditTaskStack(e.target.value)}
                     >
-                      <option>React / Next.js</option>
-                      <option>Node.js / Express</option>
-                      <option>TypeScript</option>
-                      <option>CSS / SCSS</option>
-                      <option>Banco de Dados / Prisma</option>
-                      <option>Outro</option>
+                      <option value="React / Next.js">React / Next.js</option>
+                      <option value="Node.js / Express">
+                        Node.js / Express
+                      </option>
+                      <option value="TypeScript">TypeScript</option>
+                      <option value="CSS / SCSS">CSS / SCSS</option>
+                      <option value="Banco de Dados / Prisma">
+                        Banco de Dados / Prisma
+                      </option>
+                      <option value="Outro">Outro</option>
                     </select>
                   </div>
                 </div>
@@ -2305,10 +2342,7 @@ export default function ProjectDashboardPage() {
                 {/* GitHub Branches */}
                 <div className={styles.formGroup}>
                   <label className={styles.label}>
-                    <FiGitBranch
-                    // style={{ marginRight: "6px", verticalAlign: "middle" }}
-                    />
-                    Branch (GitHub)
+                    <FiGitBranch /> Branch (GitHub)
                   </label>
                   <select
                     className={styles.select}
@@ -2319,7 +2353,9 @@ export default function ProjectDashboardPage() {
                     <option value="">
                       {loadingBranches
                         ? "Carregando branches..."
-                        : "Selecione uma branch..."}
+                        : branches.length === 0
+                          ? "Nenhuma branch encontrada ou integração inativa"
+                          : "Selecione uma branch..."}
                     </option>
                     {branches.map((branch) => (
                       <option key={branch} value={branch}>
@@ -2332,11 +2368,8 @@ export default function ProjectDashboardPage() {
                 {/* Commits List */}
                 <div className={styles.formGroup}>
                   <div className={styles.commitsHeaderRow}>
-                    <label className={styles.label} style={{ marginBottom: 0 }}>
-                      <FiGitCommit
-                      // style={{ marginRight: "6px", verticalAlign: "middle" }}
-                      />
-                      Histórico de Commits
+                    <label className={styles.labelCommitHeader}>
+                      <FiGitCommit /> Histórico de Commits
                     </label>
                     {selectedBranch && (
                       <span className={styles.branchBadge}>
@@ -2418,9 +2451,9 @@ export default function ProjectDashboardPage() {
                       value={editTaskStatus}
                       onChange={(e) => setEditTaskStatus(e.target.value)}
                     >
-                      <option>A fazer</option>
-                      <option>Em Andamento</option>
-                      <option>Concluído</option>
+                      <option value="A fazer">A fazer</option>
+                      <option value="Em Andamento">Em Andamento</option>
+                      <option value="Concluído">Concluído</option>
                     </select>
                   </div>
 
@@ -2524,32 +2557,62 @@ export default function ProjectDashboardPage() {
               </form>
             )}
 
-            {/* Comments Tab */}
+            {/* Conteúdo da Aba de Comentários */}
             {taskDetailTab === "comments" && (
               <div className={styles.commentsTab}>
                 <div className={styles.commentsList}>
-                  {(selectedTask.comentarios || []).length === 0 ? (
+                  {!selectedTask.comentarios ||
+                  selectedTask.comentarios.length === 0 ? (
                     <div className={styles.emptyComments}>
                       <FiMessageSquare size={32} color="#64748b" />
-                      <p>Nenhum comentário ainda.</p>
+                      <p>Nenhum comentário cadastrado nesta tarefa.</p>
                     </div>
                   ) : (
-                    (selectedTask.comentarios || []).map(
-                      (c: any, i: number) => (
-                        <div key={i} className={styles.commentItem}>
-                          <div className={styles.commentAvatar}>
-                            {(c.usuario?.nome || c.usuario?.email || "U")
-                              .charAt(0)
-                              .toUpperCase()}
+                    selectedTask.comentarios.map(
+                      (comment: any, index: number) => {
+                        const authorName =
+                          comment.usuario?.nome ||
+                          comment.usuario?.email ||
+                          comment.nomeUsuario ||
+                          "Usuário";
+
+                        const initial = authorName.charAt(0).toUpperCase();
+                        const commentId = comment.id || `comment-${index}`;
+                        const formattedDate =
+                          comment.createdAt || comment.criadoEm
+                            ? new Date(
+                                comment.createdAt || comment.criadoEm,
+                              ).toLocaleDateString("pt-BR", {
+                                day: "2-digit",
+                                month: "2-digit",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : null;
+
+                        return (
+                          <div key={commentId} className={styles.commentItem}>
+                            <div className={styles.commentAvatar}>
+                              {initial}
+                            </div>
+                            <div className={styles.commentContent}>
+                              <div className={styles.commentHeader}>
+                                <span className={styles.commentAuthor}>
+                                  {authorName}
+                                </span>
+                                {formattedDate && (
+                                  <span className={styles.commentDate}>
+                                    {formattedDate}
+                                  </span>
+                                )}
+                              </div>
+                              <p className={styles.commentText}>
+                                {comment.conteudo}
+                              </p>
+                            </div>
                           </div>
-                          <div className={styles.commentContent}>
-                            <span className={styles.commentAuthor}>
-                              {c.usuario?.nome || c.usuario?.email || "Usuário"}
-                            </span>
-                            <p className={styles.commentText}>{c.conteudo}</p>
-                          </div>
-                        </div>
-                      ),
+                        );
+                      },
                     )
                   )}
                 </div>
@@ -2560,16 +2623,14 @@ export default function ProjectDashboardPage() {
                     className={styles.commentForm}
                   >
                     <textarea
-                      placeholder="Escreva um comentário..."
+                      placeholder="Escreva um comentário sobre esta tarefa..."
                       rows={3}
                       className={styles.textarea}
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
+                      required
                     />
-                    <div
-                      className={styles.modalFooter}
-                      style={{ paddingTop: "0.75rem" }}
-                    >
+                    <div className={styles.modalFooterComment}>
                       <button
                         type="submit"
                         className={styles.submitBtn}
