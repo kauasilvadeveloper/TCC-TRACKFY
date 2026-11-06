@@ -9,7 +9,10 @@ const config: Config = {
     "^.+\\.ts$": [
       "ts-jest",
       {
-        tsconfig: "tsconfig.json",
+        tsconfig: {
+          esModuleInterop: true,
+          allowSyntheticDefaultImports: true,
+        },
         diagnostics: false,
       },
     ],
