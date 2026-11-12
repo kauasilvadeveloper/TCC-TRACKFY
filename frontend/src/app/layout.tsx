@@ -6,6 +6,9 @@ import { ThemeProvider } from "@/src/context/ThemeContext";
 export const metadata: Metadata = {
   title: "Trackfy",
   description: "Gestão de projetos sem complexidade",
+  icons: {
+    icon: "/logo-trackfy.png",
+  },
 };
 
 export default function RootLayout({

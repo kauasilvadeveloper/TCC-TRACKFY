@@ -20,22 +20,6 @@ export function ProjectCard({ project }: ProjectCardProps) {
       <div className={styles.cardContent}>
         <div className={styles.cardHeader}>
           <h3 className={styles.projectTitle}>{project.tituloProjeto}</h3>
-          <span className={styles.progressBadge}>{project.progresso}%</span>
-        </div>
-
-        <p className={styles.sprintText}>{project.sprintAtual}</p>
-
-        <div className={styles.progressBarContainer}>
-          <div className={styles.progressTrack}>
-            <div
-              className={styles.progressFill}
-              style={{ width: `${project.progresso}%` }}
-              role="progressbar"
-              aria-valuenow={project.progresso}
-              aria-valuemin={0}
-              aria-valuemax={100}
-            />
-          </div>
         </div>
 
         <div className={styles.cardFooter}>

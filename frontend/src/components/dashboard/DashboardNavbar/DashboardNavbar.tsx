@@ -120,20 +120,6 @@ export function DashboardNavbar() {
                 </div>
                 <button
                   type="button"
-                  className={styles.dropdownItem}
-                  onClick={() => setDropdownOpen(false)}
-                >
-                  👤 Meu Perfil
-                </button>
-                <button
-                  type="button"
-                  className={styles.dropdownItem}
-                  onClick={() => setDropdownOpen(false)}
-                >
-                  ⚙️ Preferências
-                </button>
-                <button
-                  type="button"
                   className={`${styles.dropdownItem} ${styles.logout}`}
                   onClick={() => logout("/")}
                 >
