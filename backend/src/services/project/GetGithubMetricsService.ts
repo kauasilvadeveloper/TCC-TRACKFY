@@ -4,8 +4,8 @@ import { AppError } from "../../errors/AppError";
 
 export interface GetGithubMetricsDTO {
   projectId: number;
-  branch?: string; // Opcional: se omitido, analisa a branch padrão do repositório
-  days?: number; // Opcional: se omitido, analisa o histórico recente sem corte de data
+  branch?: string;
+  days?: number;
 }
 
 export interface DeveloperMetrics {
@@ -31,20 +31,20 @@ export interface OpenPrAging {
 }
 
 export interface TimelinePoint {
-  date: string; // YYYY-MM-DD
+  date: string;
   commits: number;
   prsMerged: number;
 }
 
 export interface HeatmapPoint {
-  dayOfWeek: number; // 0 (Domingo) a 6 (Sábado)
-  hour: number; // 0 a 23 (UTC)
+  dayOfWeek: number;
+  hour: number;
   count: number;
 }
 
 export interface GithubMetricsResponse {
   repository: string;
-  selectedBranch: string | null; // null indica que foi utilizada a branch padrão
+  selectedBranch: string | null;
   periodDays: number | null;
   summary: {
     branchesCount: number;
@@ -80,6 +80,7 @@ const PROTECTED_BRANCHES = new Set([
 const SEMANTIC_PREFIX_REGEX =
   /^(?:[^\w\s]+\s*|:[a-z0-9_+-]+:\s*)?(feat|feature|fix|bugfix|refactor|perf|test|chore|docs|style|build|ci|revert)(?:\([^)]+\))?!?:\s*/i;
 
+const GITHUB_TOKEN_REGEX = /^(ghp_|github_pat_|gho_|ghu_|ghs_)/;
 const MAX_PAGES_WITHOUT_DATE_FILTER = 3;
 
 export class GetGithubMetricsService {
@@ -107,7 +108,7 @@ export class GetGithubMetricsService {
     }
     const sinceISO = safeDays !== null ? sinceDate.toISOString() : undefined;
 
-    // 1. Projeção estrita no banco resgatando apenas os campos necessários
+    // 1. Projeção estrita no banco
     const project = await prisma.projeto.findUnique({
       where: { id: projectId },
       select: { id: true, tokenGithub: true },
@@ -119,32 +120,21 @@ export class GetGithubMetricsService {
 
     if (!project.tokenGithub) {
       throw new AppError(
-        "Este projeto não possui um repositório do GitHub vinculado.",
+        "Este projeto não possui um token ou repositório do GitHub vinculado.",
         400,
       );
     }
-
-    // 2. Extração segura de owner/repo do campo persistido
-    const repoInfo = this.extractOwnerAndRepo(project.tokenGithub);
-    if (!repoInfo) {
-      throw new AppError(
-        "O vínculo do GitHub armazenado não é uma URL ou repositório válido (ex: 'owner/repo').",
-        400,
-      );
-    }
-
-    const { owner, repo } = repoInfo;
-
-    // 3. Instanciação do Octokit utilizando Token autenticado
-    const octokit = new Octokit({
-      auth: process.env.GITHUB_GLOBAL_TOKEN,
-    });
 
     try {
+      // 2. Resolve o cliente Octokit (com token do projeto ou global) e identifica owner/repo
+      const { octokit, owner, repo } = await this.resolveGithubClientAndRepo(
+        project.tokenGithub,
+      );
+
       let pullPagesFetched = 0;
       let commitPagesFetched = 0;
 
-      // 4. Execução concorrente; listCommits usa `sha: cleanBranch` quando uma branch é selecionada
+      // 3. Execução concorrente via SDK Oficial do Octokit
       const [branches, allPulls, commits] = await Promise.all([
         octokit.paginate(octokit.rest.repos.listBranches, {
           owner,
@@ -221,13 +211,6 @@ export class GetGithubMetricsService {
       if (typeof error === "object" && error !== null && "status" in error) {
         const githubError = error as { status: number; message?: string };
 
-        if (githubError.status === 404) {
-          throw new AppError(
-            "Repositório do GitHub não encontrado ou sem permissão de acesso.",
-            404,
-          );
-        }
-
         if (githubError.status === 401) {
           throw new AppError(
             "Token de autenticação do GitHub inválido ou expirado.",
@@ -235,7 +218,20 @@ export class GetGithubMetricsService {
           );
         }
 
-        // O GitHub retorna 422 quando o parâmetro `sha` (nome da branch) não existe
+        if (githubError.status === 403) {
+          throw new AppError(
+            "O token do GitHub não possui permissão de leitura para este repositório privado.",
+            403,
+          );
+        }
+
+        if (githubError.status === 404) {
+          throw new AppError(
+            "Repositório do GitHub não encontrado ou sem permissão de acesso.",
+            404,
+          );
+        }
+
         if (githubError.status === 422 && cleanBranch) {
           throw new AppError(
             `A branch '${cleanBranch}' não foi encontrada no repositório.`,
@@ -255,6 +251,78 @@ export class GetGithubMetricsService {
 
       throw new AppError(errorMessage, 502);
     }
+  }
+
+  private async resolveGithubClientAndRepo(
+    storedValue: string,
+  ): Promise<{ octokit: Octokit; owner: string; repo: string }> {
+    const cleanInput = storedValue.trim();
+
+    // Formato 1: "token|owner/repo" ou "token|https://github.com/owner/repo"
+    if (cleanInput.includes("|")) {
+      const [rawToken, rawRepo] = cleanInput.split("|");
+      const token = rawToken?.trim();
+      const repoInfo = rawRepo ? this.extractOwnerAndRepo(rawRepo) : null;
+
+      if (!token || !repoInfo) {
+        throw new AppError(
+          "Formato inválido. Use 'token|owner/repo' ou apenas o token do GitHub.",
+          400,
+        );
+      }
+
+      return {
+        octokit: new Octokit({ auth: token }),
+        owner: repoInfo.owner,
+        repo: repoInfo.repo,
+      };
+    }
+
+    // Formato 2: Token pessoal do GitHub (ghp_..., github_pat_..., etc.)
+    const isToken =
+      GITHUB_TOKEN_REGEX.test(cleanInput) ||
+      (!cleanInput.includes("/") && cleanInput.length >= 20);
+
+    if (isToken) {
+      const octokit = new Octokit({ auth: cleanInput });
+      const { data: repos } = await octokit.rest.repos.listForAuthenticatedUser(
+        {
+          sort: "pushed",
+          direction: "desc",
+          per_page: 10,
+        },
+      );
+
+      if (!repos || repos.length === 0) {
+        throw new AppError(
+          "O token informado não possui acesso a nenhum repositório no GitHub.",
+          404,
+        );
+      }
+
+      // Prioriza o repositório mais recentemente atualizado acessível pelo token
+      const targetRepo = repos[0];
+      return {
+        octokit,
+        owner: targetRepo.owner.login,
+        repo: targetRepo.name,
+      };
+    }
+
+    // Formato 3: URL ou "owner/repo" (usa o token global da aplicação)
+    const repoInfo = this.extractOwnerAndRepo(cleanInput);
+    if (!repoInfo) {
+      throw new AppError(
+        "Informe um token válido do GitHub ou o repositório no formato 'owner/repo'.",
+        400,
+      );
+    }
+
+    return {
+      octokit: new Octokit({ auth: process.env.GITHUB_GLOBAL_TOKEN }),
+      owner: repoInfo.owner,
+      repo: repoInfo.repo,
+    };
   }
 
   private buildAnalyticsPayload(
@@ -356,7 +424,6 @@ export class GetGithubMetricsService {
       }
     };
 
-    // --- 1. Processamento de Commits (da branch selecionada ou padrão) ---
     let nonMergeCommitsCount = 0;
 
     for (const item of commits) {
@@ -386,7 +453,6 @@ export class GetGithubMetricsService {
       }
     }
 
-    // Fallback: se só houver commits de merge, classifica pelos títulos dos PRs vinculados à branch
     if (nonMergeCommitsCount === 0 && pulls.length > 0) {
       const relevantPulls = selectedBranch
         ? pulls.filter(
@@ -403,7 +469,6 @@ export class GetGithubMetricsService {
       }
     }
 
-    // --- 2. Processamento de Pull Requests ---
     let mergedPRs = 0;
     let openPRs = 0;
     let closedWithoutMergePRs = 0;
@@ -466,12 +531,10 @@ export class GetGithubMetricsService {
       }
     }
 
-    // --- 3. Cálculo de Higiene de Branches ---
     const orphanBranchesCount = branches.filter(
       (b) => !PROTECTED_BRANCHES.has(b.name) && !activePrBranches.has(b.name),
     ).length;
 
-    // --- 4. Formatação e Ordenação Final ---
     const developers: DeveloperMetrics[] = Array.from(devMap.values())
       .map(({ _mergeDurationsHours, ...devMetrics }) => ({
         ...devMetrics,

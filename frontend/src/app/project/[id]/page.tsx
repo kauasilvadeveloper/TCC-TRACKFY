@@ -33,6 +33,8 @@ import {
   FiUserPlus,
   FiAlertTriangle,
 } from "react-icons/fi";
+import { GithubAnalyticsTab } from "@/src/components/projects/GithubAnalyticsTab/GithubAnalyticsTab";
+import { BiChart } from "react-icons/bi";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function formatDate(dateStr?: string): string {
@@ -74,7 +76,7 @@ export default function ProjectDashboardPage() {
 
   // ── UI
   const [activeTab, setActiveTab] = useState<
-    "overview" | "sprints" | "tasks" | "kanban" | "settings"
+    "overview" | "sprints" | "tasks" | "kanban" | "settings" | "metrics"
   >("overview");
   const [userRole, setUserRole] = useState("aluno");
 
@@ -1111,6 +1113,7 @@ export default function ProjectDashboardPage() {
           {(
             [
               { key: "overview", icon: <FiBarChart2 />, label: "Visão Geral" },
+              { key: "metrics", icon: <BiChart />, label: "Gráficos" },
               {
                 key: "sprints",
                 icon: <FiLayers />,
@@ -1140,13 +1143,6 @@ export default function ProjectDashboardPage() {
           {/* ══ VISÃO GERAL ════════════════════════════════════════════════════ */}
           {activeTab === "overview" && (
             <>
-              {(project.description || project.descricao) && (
-                <div className={styles.projectDescriptionBox}>
-                  <strong>Sobre o Projeto:</strong>
-                  {project.description || project.descricao}
-                </div>
-              )}
-
               {/* Metrics */}
               <div className={styles.metricsGrid}>
                 <div className={styles.metricCard}>
@@ -1328,6 +1324,23 @@ export default function ProjectDashboardPage() {
                 )}
               </div>
             </>
+          )}
+
+          {/* ══ MÉTRICAS GITHUB ════════════════════════════════════════════════ */}
+          {activeTab === "metrics" && (
+            <div className={styles.tabSection}>
+              <div className={styles.sectionHeader}>
+                <div>
+                  <h3>Métricas de Engenharia (GitHub)</h3>
+                  <p className={styles.sectionSubtitle}>
+                    Desempenho da equipe, fluxo de Pull Requests e distribuição
+                    de commits
+                  </p>
+                </div>
+              </div>
+
+              <GithubAnalyticsTab projectId={Number(project.id)} />
+            </div>
           )}
 
           {/* ══ SPRINTS ════════════════════════════════════════════════════════ */}

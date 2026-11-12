@@ -1,0 +1,475 @@
+.analyticsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+/* ── Header & Filtros ──────────────────────────────────────────────────── */
+.headerBar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
+}
+
+.repoIdentity {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.repoBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.updatingTag {
+  font-size: 0.8rem;
+  color: var(--brand-accent);
+  animation: pulseOpacity 1.2s infinite ease-in-out;
+}
+
+.filtersGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+}
+
+.filterControl {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.filterControl label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.selectInput {
+  padding: 0.5rem 0.85rem;
+  border-radius: 8px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  outline: none;
+  cursor: pointer;
+  min-width: 190px;
+  transition: border-color 0.2s ease;
+}
+
+.selectInput:focus {
+  border-color: var(--border-focus);
+}
+
+/* ── KPI Grid ──────────────────────────────────────────────────────────── */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem;
+}
+
+.kpiCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 1.2rem;
+  box-shadow: var(--shadow-card);
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.kpiCard:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-subtle);
+}
+
+.kpiHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 0.65rem;
+}
+
+.kpiValue {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.kpiSubtext {
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* ── Grid de Gráficos ──────────────────────────────────────────────────── */
+.chartsTwoCols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+@media (max-width: 960px) {
+  .chartsTwoCols {
+    grid-template-columns: 1fr;
+  }
+}
+
+.chartCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 1.25rem;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.chartCardHeader h4 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.chartCardHeader p {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.chartBody {
+  width: 100%;
+  min-height: 260px;
+}
+
+.emptyChart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 240px;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  background: var(--bg-card-subtle);
+  border-radius: 10px;
+  border: 1px dashed var(--border-color);
+}
+
+/* ── Seção de Desenvolvedores ──────────────────────────────────────────── */
+.devSectionGrid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .devSectionGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.devTableWrapper {
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+}
+
+.devTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.devTable th {
+  text-align: left;
+  padding: 0.7rem 0.85rem;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.devTable td {
+  padding: 0.65rem 0.85rem;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.devTable tr:last-child td {
+  border-bottom: none;
+}
+
+.devIdentityCell {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 500;
+}
+
+.devAvatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.devAvatarFallback {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--brand-primary);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.badgeNeutral,
+.badgeWarning {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badgeNeutral {
+  background: var(--bg-muted);
+  color: var(--text-secondary);
+}
+
+.badgeWarning {
+  background: rgba(245, 158, 11, 0.16);
+  color: var(--accent-orange);
+}
+
+/* ── Heatmap 7x24 ──────────────────────────────────────────────────────── */
+.heatmapWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding-top: 0.25rem;
+}
+
+.heatmapHoursHeader {
+  display: grid;
+  grid-template-columns: 36px repeat(8, 1fr);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-bottom: 0.2rem;
+}
+
+.heatmapRow {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.heatmapDayLabel {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.heatmapCells {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  gap: 3px;
+}
+
+.heatmapCell {
+  aspect-ratio: 1 / 1;
+  border-radius: 3px;
+  transition: transform 0.15s ease;
+}
+
+.heatmapCell:hover {
+  transform: scale(1.25);
+  outline: 1px solid var(--brand-accent);
+}
+
+/* ── Radar de PRs Abertos ──────────────────────────────────────────────── */
+.agingList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  max-height: 270px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.agingItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  text-decoration: none;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.agingItem:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-subtle);
+}
+
+.agingMain {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.agingTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.prNumber {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--brand-accent);
+}
+
+.prTitle {
+  font-size: 0.86rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.draftBadge {
+  font-size: 0.68rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  background: var(--bg-muted);
+  color: var(--text-secondary);
+}
+
+.agingMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.agingRight {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.ageBadgeOk,
+.ageBadgeAlert {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+}
+
+.ageBadgeOk {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--accent-green);
+}
+
+.ageBadgeAlert {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--accent-red);
+}
+
+/* ── Loading & Error States ────────────────────────────────────────────── */
+.stateBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3rem 1.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.stateBox h4 {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.stateBox p {
+  margin: 0;
+  font-size: 0.875rem;
+  max-width: 420px;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border-subtle);
+  border-top-color: var(--brand-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulseOpacity {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
