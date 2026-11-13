@@ -45,7 +45,11 @@ function formatDate(dateStr?: string): string {
 function toInputDate(dateStr?: string): string {
   if (!dateStr) return "";
   try {
-    return new Date(dateStr).toISOString().split("T")[0];
+    const d = new Date(dateStr);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   } catch {
     return "";
   }
@@ -401,7 +405,9 @@ export default function ProjectDashboardPage() {
         "/sprint",
         {
           tituloSprint: newSprintTitle.trim(),
-          prazoSprint: new Date(newSprintDeadline + "T23:59:59").toISOString(),
+          prazoSprint: new Date(
+            `${newSprintDeadline}T23:59:59.000Z`,
+          ).toISOString(),
           descricaoSprint: newSprintDesc.trim() || undefined,
           projetoId: project.id,
         },
@@ -514,7 +520,9 @@ export default function ProjectDashboardPage() {
           descricaoTarefa: newTaskDesc.trim() || undefined,
           status: initialStatus,
           stack: newTaskStack,
-          prazoTarefa: new Date(newTaskDeadline + "T23:59:59").toISOString(),
+          prazoTarefa: new Date(
+            `${newTaskDeadline}T23:59:59.000Z`,
+          ).toISOString(),
           fkSprint: Number(newTaskSprintId),
           fkColuna: Number(newTaskColumnId),
           usuarioIds:

@@ -11,7 +11,7 @@ export function DashboardCtaBanner() {
           <div className={styles.textArea}>
             <span className={styles.tag}>Pronto para começar?</span>
             <h2 className={styles.title}>
-              Crie um projeto ou volte ao trabalho.
+              Crie um projeto e vamos ao trabalho!
             </h2>
             <p className={styles.description}>
               Escolha um projeto existente ou comece uma nova iniciativa para
