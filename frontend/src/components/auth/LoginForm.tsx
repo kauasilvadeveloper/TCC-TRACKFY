@@ -5,6 +5,7 @@ import { useState, FormEvent } from "react";
 import { useAuth } from "@/src/context/AuthContext";
 import styles from "./LoginForm.module.scss";
 import { Brand } from "../dashboard/Brand/Brand";
+import axios from "axios";
 
 export function LoginForm() {
   const { login, user, isAuthenticated } = useAuth();
@@ -30,9 +31,45 @@ export function LoginForm() {
 
       console.log("Usuário logado com sucesso");
     } catch (err: unknown) {
-      // Captura a exceção tratada pelo interceptor do Axios
-      if (err instanceof Error) {
-        setError(err.message);
+      if (axios.isAxiosError(err)) {
+        const status = err.response?.status;
+        const backendMessage = err.response?.data?.message;
+
+        if (!err.response) {
+          setError(
+            "Não foi possível conectar ao servidor. Verifique sua internet.",
+          );
+        } else if (status === 400 || status === 401) {
+          setError(
+            "E-mail ou senha inválidos. Confira seus dados e tente novamente.",
+          );
+        } else if (status === 403) {
+          setError(
+            "Acesso negado. Seu usuário não possui permissão para entrar.",
+          );
+        } else if (status === 404) {
+          setError("Conta não encontrada com este e-mail.");
+        } else if (status === 429) {
+          setError(
+            "Muitas tentativas de login. Aguarde alguns minutos e tente novamente.",
+          );
+        } else if (status && status >= 500) {
+          setError(
+            "O servidor está temporariamente indisponível. Tente mais tarde.",
+          );
+        } else {
+          setError(
+            backendMessage ||
+              "Não foi possível realizar o login. Tente novamente.",
+          );
+        }
+      } else if (err instanceof Error) {
+        // Caso o interceptor do Axios já tenha lançado um Error customizado
+        setError(
+          err.message === "Network Error"
+            ? "Falha de conexão com o servidor. Verifique sua rede."
+            : err.message,
+        );
       } else {
         setError("Ocorreu um erro inesperado ao tentar realizar o login.");
       }
