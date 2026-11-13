@@ -209,34 +209,70 @@ export default function ProjectDashboardPage() {
   }, []);
 
   // ─── Fetch data ────────────────────────────────────────────────────────────
+  // Refs para evitar resetar o quadro selecionado ou interromper um drag & drop
+  const currentKanbanIdRef = React.useRef<number | null>(null);
+  const draggingTaskIdRef = React.useRef<number | null>(null);
+
   useEffect(() => {
-    async function load() {
+    currentKanbanIdRef.current = currentKanbanId;
+  }, [currentKanbanId]);
+
+  useEffect(() => {
+    draggingTaskIdRef.current = draggingTaskId;
+  }, [draggingTaskId]);
+
+  // ─── Fetch & Sync automático (efeito tempo real sem mexer no backend) ───────
+  useEffect(() => {
+    let isMounted = true;
+
+    async function syncData(isBackground = false) {
       if (!projectId) {
-        setLoading(false);
+        if (!isBackground) setLoading(false);
         return;
       }
       if (!getToken()) {
         router.push("/");
         return;
       }
+
+      // Evita requisições com a aba oculta ou enquanto arrasta um card
+      if (
+        isBackground &&
+        (document.hidden || draggingTaskIdRef.current !== null)
+      ) {
+        return;
+      }
+
       try {
-        setLoading(true);
+        if (!isBackground) setLoading(true);
         const h = authHeaders();
-        const pRes = await api.get(`/project/${projectId}`, { headers: h });
+
+        const [pRes, kRes] = await Promise.all([
+          api.get(`/project/${projectId}`, { headers: h }),
+          api.get(`/kanban/${projectId}`, { headers: h }).catch((err) => err),
+        ]);
+
+        if (!isMounted) return;
+
         setProject(pRes.data);
         setSprints(Array.isArray(pRes.data?.sprints) ? pRes.data.sprints : []);
 
-        try {
-          const kRes = await api.get(`/kanban/${projectId}`, { headers: h });
+        // Se a rota de kanban respondeu com sucesso
+        if (kRes?.data) {
           const kanbansList = Array.isArray(kRes.data)
             ? kRes.data
             : [kRes.data];
           setKanbans(kanbansList);
 
           if (kanbansList.length > 0) {
-            const initialKanban = kanbansList[0];
-            setCurrentKanbanId(initialKanban.id);
-            setColumns(initialKanban.colunas || []);
+            // Preserva o quadro que o usuário está vendo no momento
+            const activeKanban =
+              kanbansList.find(
+                (k: any) => Number(k.id) === Number(currentKanbanIdRef.current),
+              ) || kanbansList[0];
+
+            setCurrentKanbanId(activeKanban.id);
+            setColumns(activeKanban.colunas || []);
 
             const allTasks = kanbansList.flatMap((k: any) =>
               (k.colunas || []).flatMap((col: any) =>
@@ -249,61 +285,82 @@ export default function ProjectDashboardPage() {
             );
             setTasks(allTasks);
           }
-        } catch (kErr: any) {
-          if (kErr?.response?.status === 404) {
-            try {
-              const kNew = await api.post(
-                "/kanban",
-                {
-                  tituloKanban: "Quadro Principal",
-                  fkProjeto: Number(projectId),
-                },
-                { headers: h },
-              );
-              if (kNew.data?.id) {
-                const kid = kNew.data.id;
-                const [c1, c2, c3] = await Promise.all([
-                  api.post(
-                    "/kanban/column",
-                    { tituloColuna: "A Fazer", fkKanban: kid },
-                    { headers: h },
-                  ),
-                  api.post(
-                    "/kanban/column",
-                    { tituloColuna: "Em Andamento", fkKanban: kid },
-                    { headers: h },
-                  ),
-                  api.post(
-                    "/kanban/column",
-                    { tituloColuna: "Concluído", fkKanban: kid },
-                    { headers: h },
-                  ),
-                ]);
-                const createdCols = [c1.data, c2.data, c3.data];
-                const fullKanban = { ...kNew.data, colunas: createdCols };
-                setKanbans([fullKanban]);
-                setCurrentKanbanId(fullKanban.id);
-                setColumns(createdCols);
-                setProject((p: any) => ({
-                  ...p,
-                  kanbans: [...(p?.kanbans || []), fullKanban],
-                }));
-              }
-            } catch {}
-          }
+        } else if (!isBackground && kRes?.response?.status === 404) {
+          // Criação automática do quadro padrão (apenas na carga inicial)
+          try {
+            const kNew = await api.post(
+              "/kanban",
+              {
+                tituloKanban: "Quadro Principal",
+                fkProjeto: Number(projectId),
+              },
+              { headers: h },
+            );
+            if (kNew.data?.id && isMounted) {
+              const kid = kNew.data.id;
+              const [c1, c2, c3] = await Promise.all([
+                api.post(
+                  "/kanban/column",
+                  { tituloColuna: "A Fazer", fkKanban: kid },
+                  { headers: h },
+                ),
+                api.post(
+                  "/kanban/column",
+                  { tituloColuna: "Em Andamento", fkKanban: kid },
+                  { headers: h },
+                ),
+                api.post(
+                  "/kanban/column",
+                  { tituloColuna: "Concluído", fkKanban: kid },
+                  { headers: h },
+                ),
+              ]);
+              const createdCols = [c1.data, c2.data, c3.data];
+              const fullKanban = { ...kNew.data, colunas: createdCols };
+              setKanbans([fullKanban]);
+              setCurrentKanbanId(fullKanban.id);
+              setColumns(createdCols);
+              setProject((p: any) => ({
+                ...p,
+                kanbans: [...(p?.kanbans || []), fullKanban],
+              }));
+            }
+          } catch {}
         }
       } catch (err: any) {
+        if (!isMounted) return;
         if (err?.response?.status === 401) {
           localStorage.clear();
           router.push("/");
           return;
         }
-        setErrorMessage("Não foi possível carregar os dados do projeto.");
+        if (!isBackground) {
+          setErrorMessage("Não foi possível carregar os dados do projeto.");
+        }
       } finally {
-        setLoading(false);
+        if (!isBackground && isMounted) setLoading(false);
       }
     }
-    load();
+
+    // 1. Carregamento inicial
+    syncData(false);
+
+    // 2. Atualização silenciosa a cada 5 segundos
+    const intervalId = setInterval(() => {
+      syncData(true);
+    }, 5000);
+
+    // 3. Atualização imediata quando o usuário volta para a aba do navegador
+    const handleVisibilityChange = () => {
+      if (!document.hidden) syncData(true);
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [projectId]);
 
   // ─── Troca de Kanban no Visualizador ───────────────────────────────────────
